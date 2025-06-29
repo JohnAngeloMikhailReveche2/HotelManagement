@@ -102,6 +102,9 @@ def modelDashboardFrame():
         btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
                            , fg="white"
                            )
+        btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
+                           , fg="white"
+                           )
 
     def onManageClick():
         MANAGE_FRAME.lift()
@@ -115,6 +118,9 @@ def modelDashboardFrame():
                           , fg="white"
                           )
         btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
+                           , fg="white"
+                           )
+        btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
                            , fg="white"
                            )
 
@@ -132,6 +138,9 @@ def modelDashboardFrame():
         btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
                            , fg="white"
                            )
+        btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
+                           , fg="white"
+                           )
 
     def onCheckOutClick():
         CHECK_OUT_FRAME.lift()
@@ -147,6 +156,28 @@ def modelDashboardFrame():
         btnHistory.config(bg=DASHBOARD_FRAME_COLOR
                           , fg="white"
                           )
+        btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
+                          , fg="white"
+                          )
+
+    def onRoomStatClick():
+        ROOM_STATUS_FRAME.lift()
+        btnRoomStat.config(bg="white"
+                         , fg=DASHBOARD_BUTTON_COLOR
+                         )
+        btnBooking.config(bg=DASHBOARD_FRAME_COLOR
+                         , fg="white"
+                         )
+        btnManage.config(bg=DASHBOARD_FRAME_COLOR
+                         , fg="white"
+                         )
+        btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                          , fg="white"
+                          )
+        btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
+                          , fg="white"
+                          )
+
 
 
 
@@ -270,13 +301,41 @@ def modelDashboardFrame():
                            )
     btnCheckOut.pack(anchor="n")
 
+    buttonFrame6 = tk.Frame(dashboardFrame
+                            , bg=DASHBOARD_FRAME_COLOR
+                            , height=50
+                            , width=230
+                            )
+    buttonFrame6.pack_propagate(False)
+    buttonFrame6.pack(pady=(20, 0)
+                      )
+
+    btnRoomStat = tk.Button(buttonFrame6
+                            , text="Room Status"
+                            , fg="white"
+                            , bg=DASHBOARD_FRAME_COLOR
+                            , height=50
+                            , width=230
+                            , borderwidth=0
+                            , highlightthickness=0
+                            , activebackground="white"
+                            , activeforeground=DASHBOARD_BUTTON_COLOR
+                            , relief=tk.FLAT
+                            , font=tkFont.Font(family="Arial"
+                                               , size=12
+                                               , weight="bold"
+                                               )
+                            , command=onRoomStatClick
+                            )
+    btnRoomStat.pack(anchor="n")
+
     labelFrame = tk.Frame(dashboardFrame
                             , bg=DASHBOARD_FRAME_COLOR
                             , height=70
                             , width=230
                             )
     labelFrame.pack_propagate(False)
-    labelFrame.pack(pady=(185, 0)
+    labelFrame.pack(pady=(115, 0)
                       )
 
     loggedAsLabel = tk.Label(labelFrame
@@ -1687,6 +1746,199 @@ def modelCheckOutFrame():
 
     return frame
 
+def modelRoomStatusFrame():
+
+    # Note:
+    # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
+    # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
+    #                     it is moved around by canvas.
+
+    # Main Whole Frame
+    frame = tk.Frame(canvas
+                     , bg="white"
+                     , height=635
+                     , width=1050
+                     )
+    # This forces the frame to keep the fixed size regardless what's inside of it.
+    frame.pack_propagate(False)
+
+    # A scrollable canvas embedded in the bookingFrame and a scrollbar
+    scroll_canvas = tk.Canvas(frame, width=1050, bg="white")
+    scrollbar = tk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
+
+    # Linking the canvas to the scrollbar so
+    # when the canvas moves the scrollbar's thumb pos will also move.
+    scroll_canvas.configure(yscrollcommand=scrollbar.set)
+
+    scrollbar.pack(side="right", fill="y")
+    # expand=True means the canvas will grow as the BookingFrame grows.
+    scroll_canvas.pack(side="left", fill="both", expand=True)
+
+    # This frame contains the actual scrollable contents
+    mainFrame = tk.Frame(scroll_canvas, bg="white")
+    # Embedding the mainBookingFrame to the scroll canvas
+    scroll_canvas.create_window((0, 0), window=mainFrame, anchor="nw")
+
+    # Events
+
+    # This allows the canvas to know that the scrollable area has a specified tall
+    # so that it can be updated or be scrolled
+    def update_scrollregion(e):
+        canvas_height = scroll_canvas.winfo_height()
+        content_bbox = scroll_canvas.bbox("all")
+
+        if content_bbox:
+            content_height = content_bbox[3] - content_bbox[1]  # bottom - top
+
+            # Only set scrollregion if content is taller than the canvas
+            if content_height > canvas_height:
+                scroll_canvas.configure(scrollregion=content_bbox)
+            else:
+                # Lock scrolling — set scrollregion to visible canvas only
+                scroll_canvas.configure(scrollregion=(0, 0, 0, canvas_height))
+
+    # Whenever the frame changes size,
+    # it Recalculates the scroll region when the mainBookingFrame size changes
+    mainFrame.bind("<Configure>", update_scrollregion)
+
+    def on_mousewheel(e):
+        content_bbox = scroll_canvas.bbox("all")
+        if content_bbox:
+            content_height = content_bbox[3] - content_bbox[1]
+            canvas_height = scroll_canvas.winfo_height()
+
+            if content_height > canvas_height:
+                scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+
+    scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
+    scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
+
+    # Main UI Elements inside
+
+    lblTitle = tk.Label(mainFrame
+                        , text="Room Status"
+                        , fg="black"
+                        , bg="white"
+                        , font=tkFont.Font(family="Arial"
+                                           , size=21
+                                           , weight="bold"
+                                           )
+                        )
+    lblTitle.pack(pady=(20, 0)
+                  , padx=(20, 0)
+                  , anchor="w"
+                  )
+
+    btnFrame = tk.Frame(mainFrame
+                        , bg="white"
+                        )
+    btnFrame.pack(anchor="w")
+
+    lblSearchBy = tk.Label(btnFrame
+                           , text="Search By"
+                           , fg="black"
+                           , bg="white"
+                           , font=tkFont.Font(family="Arial"
+                                              , size=12
+                                              , weight="bold"
+                                              )
+                           )
+    lblSearchBy.pack(pady=(24, 0)
+                     , padx=(10, 0)
+                     , anchor="w"
+                     , side="left"
+                     )
+
+    selectedFilter = StringVar()
+    filterCmb = ttk.Combobox(btnFrame
+                             , textvariable=selectedFilter
+                             , state="readonly"
+                             , width=20
+                             )
+    filterCmb['values'] = ('All'
+                           , 'Room Type'
+                           , 'Bed Type'
+                           , 'Status'
+                           )
+    filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
+    filterCmb.current(0)
+
+    searchEntry = tk.Entry(btnFrame
+                           , width=30
+                           , borderwidth=3
+                           )
+    searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
+
+    btnSearch = tk.Button(btnFrame
+                          , text="Search"
+                          , pady=5
+                          , padx=40
+                          )
+    btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
+
+    btnReset = tk.Button(btnFrame
+                         , text="Reset"
+                         , pady=5
+                         , padx=40
+                         )
+    btnReset.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
+
+    treeContainer = tk.Frame(mainFrame
+                             , width=1000
+                             , height=400
+                             , bg="white"
+                             )
+    treeContainer.pack(padx=10, pady=10)
+    treeContainer.pack_propagate(False)
+
+    # Treeview Widget
+    roomTree = ttk.Treeview(treeContainer, show="headings", height=17)
+
+    # Columns
+    roomTree['columns'] = ("Room Number"
+                       , "Room Type"
+                       , "Bed Type"
+                       , "Status"
+                       )
+
+    # Formatting Columns
+    roomTree.column("Room Number"
+                , anchor=tk.W
+                , width=COLUMN_WIDTH
+                )
+    roomTree.column("Room Type"
+                , anchor=tk.W
+                , width=COLUMN_WIDTH
+                )
+    roomTree.column("Bed Type"
+                , anchor=tk.W
+                , width=COLUMN_WIDTH
+                )
+    roomTree.column("Status"
+                , anchor=tk.W
+                , width=COLUMN_WIDTH
+                )
+
+    # Headings
+    roomTree.heading("Room Type", text="Room Type")
+    roomTree.heading("Bed Type", text="Bed Type")
+    roomTree.heading("Room Number", text="Room Number")
+    roomTree.heading("Status", text="Status")
+
+    # Horizontal Scrollbar
+    scrollbar = ttk.Scrollbar(treeContainer
+                              , orient="horizontal"
+                              , command=roomTree.xview
+                              )
+    roomTree.configure(xscrollcommand=scrollbar.set)
+
+    # Pack
+    roomTree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
+    scrollbar.pack(side="bottom", fill="x")
+
+    return frame
+
+
 
 
 
@@ -1730,7 +1982,7 @@ MANAGE_FRAME = modelManageFrame()
 BOOKING_FRAME = modelBookingFrame()
 HISTORY_FRAME = modelHistoryFrame()
 CHECK_OUT_FRAME = modelCheckOutFrame()
-
+ROOM_STATUS_FRAME = modelRoomStatusFrame()
 
 
 
@@ -1765,6 +2017,11 @@ id5 = canvas.create_window( 755
 id6 = canvas.create_window( 755
                       , windowHeight // 2 + 42
                       , window=CHECK_OUT_FRAME
+                      )
+
+id7 = canvas.create_window( 755
+                      , windowHeight // 2 + 42
+                      , window=ROOM_STATUS_FRAME
                       )
 
 

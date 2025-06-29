@@ -9,27 +9,6 @@ import os
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
 TOP_FRAME_COLOR = "#1a3f73"
@@ -39,8 +18,6 @@ LOGOUT_BUTTON_COLOR = "#407099"
 
 # CONSTANTS
 COLUMN_WIDTH = 100
-
-
 
 
 
@@ -252,13 +229,6 @@ def modelImageFrame():
     showNextImage()
 
     return imageFrame
-
-
-
-
-
-
-
 
 
 
