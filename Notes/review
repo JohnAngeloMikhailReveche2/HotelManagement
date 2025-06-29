@@ -1,0 +1,80 @@
+loadedImages = [Image.open(path).resize((windowWidth, windowHeight)).convert("RGBA") for path in imagePaths]
+
+loadedImages = [
+    Image.open(path)                       1. Open the image file from the path
+         .resize((windowWidth, windowHeight))  2. Resize it to fit the window
+         .convert("RGBA")                  3. Convert to RGBA for blending/fading support
+    for path in imagePaths                 4. For each file path in the list
+]
+
+=============================================================================================================================================
+
+    def showNextImage(step=0):
+        nextIndex = (imageIndex[0] + 1) % len(loadedImages)
+        nextImage = loadedImages[nextIndex]
+
+        # Blending current and next images
+        alpha = step / FADE_STEPS
+        blend = Image.blend(currImage[0], nextImage, alpha)
+        tkImage = ImageTk.PhotoImage(blend) # Converting the blend to a Tk Image
+
+        label.config(image = tkImage)
+        label.image = tkImage # Cache this to be able to use it and load
+
+        if step < FADE_STEPS:
+            imagePlacementFrame.after(FADE_DELAY, lambda: showNextImage(step + 1))
+        else:
+            # After fade completes, update the current image and move to the next image
+            imageIndex[0] = nextIndex
+            currImage[0] = nextImage
+            imagePlacementFrame.after(DELAY_SHOWIMAGE, showNextImage)
+
+Explanation:
+
+    def showNextImage(step=0):
+> This function will be called repeatedly. Each "step" controls how far the fade we are (From 0 to FADE_STEPS)
+
+    nextIndex = (imageIndex[0] + 1) % len(loadedImages) => This just makes sures that when we reach the end of the list we will go back to the start
+    nextImage = loadedImages[nextIndex]
+> Basically it calculates the next image index and loops back to the start if it reaches the end
+> Loads the preprocessed next images from the list "loadedImages"
+
+    alpha = step / FADE_STEPS
+    blend = Image.blend(currImage[0], nextImage, alpha)
+> This calculates the "alpha" for blending images which is a float from 0.0 (start) to 1.0 (end)
+> Blending the current image and next image based on "alpha" to simulate fading
+
+    tkImage = ImageTk.PhotoImage(blend)
+    label.config(image=tkImage)
+    label.image = tkImage
+> Converts the blended image to a format Tkinter understands which is the tkImage part (line 47)
+> Updates the "label" with the blended image and caches it to prevent gc (garbage collection)
+
+    if step < FADE_STEPS:
+            imagePlacementFrame.after(FADE_DELAY, lambda: showNextImage(step + 1))
+> If the fading is not done, it will schedule the next fade frame after a delay (FADE_DELAY ms)
+> lambda: showNextImage(step + 1) ensures the next blend step happens correctly.
+
+    else:
+        imageIndex[0] = nextIndex
+        currImage[0] = nextImage
+        imagePlacementFrame.after(DELAY_SHOWIMAGE, showNextImage)
+> If the fading is DONE:
+     > Update the currImage[0] to be the new base image used for the next transition
+     > Waits for DELAY_SHOWIMAGE ms before starting the next image fading.
+
+Example:
+   currImage[0] = hotel1.jpg
+   nextImage = hotel2.jpg
+
+   once the fading is done.
+
+   currImage[0] = hotel2.jpg, this means hotel2.jpg will replace hotel1.jpg
+   same goes for imageIndex.
+
+   basically we are just replacing the lists.
+
+   We made currImage and imageIndex lists so that they are mutable or can be passed around.
+
+
+
