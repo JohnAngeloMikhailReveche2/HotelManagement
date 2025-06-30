@@ -903,18 +903,6 @@ def modelBookingFrame():
                            )
     roomPriceEntry.grid(row=0, column=2)
 
-    bedPrice = tk.Label(pricingGroupBox
-                         , text="Bed Price: ₱"
-                         , bg="white"
-                         )
-    bedPrice.grid(row=1, column=1, padx=(0, 10), pady=(15,0))
-    bedPriceEntry = tk.Entry(pricingGroupBox
-                              , bg="white"
-                              , width=15
-                              , state="readonly"
-                              )
-    bedPriceEntry.grid(row=1, column=2, pady=(15,0))
-
     timePrice = tk.Label(pricingGroupBox
                         , text="Time Price: ₱"
                         , bg="white"

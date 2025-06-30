@@ -1,17 +1,12 @@
 import tkinter as tk
 from email.policy import default
-from tkinter import messagebox as mb, StringVar
+from tkinter import messagebox as mb, StringVar, messagebox
 from tkinter import ttk
 import tkinter.font as tkFont
 from tkcalendar import DateEntry
 
-
-
-
-
-
-
-
+# Classes
+from Classes.admin.IDService import IDService
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
@@ -801,6 +796,88 @@ def modelHistoryFrame():
 
 def modelIDCreate():
 
+    # The Json CRUD Functionality
+    logic = IDService()
+
+    # Methods
+
+    selected_index = [None]  # Mutable container for selected index
+
+    def refresh():
+        for i in tree.get_children():
+            tree.delete(i)
+        for idx, name in enumerate(logic.read_all()):
+            tree.insert('', 'end', iid=str(idx), values=(name,))
+
+    def clear():
+        dataEntry.delete(0, tk.END)
+        selected_index[0] = None  # Reset selection on clear
+
+    def on_select(e):
+        selected = tree.focus()
+        if selected:
+            selected_index[0] = int(selected)
+            name = tree.item(selected, 'values')[0]
+            dataEntry.delete(0, tk.END)
+            dataEntry.insert(0, name)
+        else:
+            selected_index[0] = None
+
+    def add():
+        name = dataEntry.get().strip()
+        if not name:
+            messagebox.showwarning("Missing", "Name is required.")
+            return
+        if selected_index[0] is not None:
+            data = logic.read_all()
+            if selected_index[0] < len(data) and data[selected_index[0]] == name:
+                messagebox.showwarning("Duplicate", "This item is already selected. Use Update instead.")
+                return
+        success, msg = logic.add(name)
+        if success:
+            refresh()
+            clear()
+        else:
+            messagebox.showerror("Error", msg)
+
+    def update():
+        if selected_index[0] is None:
+            messagebox.showinfo("Select", "Select an entry to update.")
+            return
+        name = dataEntry.get().strip()
+        if not name:
+            messagebox.showwarning("Missing", "Name is required.")
+            return
+        data = logic.read_all()
+        if selected_index[0] < len(data) and data[selected_index[0]] == name:
+            messagebox.showinfo("No changes", "The name is the same as before.")
+            return
+        success, msg = logic.update(selected_index[0], name)
+        if success:
+            refresh()
+            clear()
+        else:
+            messagebox.showerror("Error", msg)
+
+    def delete():
+        selected = tree.focus()
+        if not selected:
+            messagebox.showinfo("Select", "Select an entry to delete.")
+            return
+        confirm = messagebox.askyesno("Confirm", "Are you sure you want to delete this?")
+        if confirm:
+            success, msg = logic.delete(int(selected))
+            if success:
+                refresh()
+                clear()
+            else:
+                messagebox.showerror("Error", msg)
+
+
+
+
+
+
     # Main Whole Frame
     frame = tk.Frame(canvas
                               , bg="white"
@@ -842,6 +919,7 @@ def modelIDCreate():
                           , text="Add"
                           , pady=5
                           , padx=40
+                          , command = add
                           )
     btnAdd.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
@@ -849,6 +927,7 @@ def modelIDCreate():
                           , text="Update"
                           , pady=5
                           , padx=40
+                          , command = update
                           )
     btnUpdate.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
 
@@ -856,6 +935,7 @@ def modelIDCreate():
                           , text="Delete"
                           , pady=5
                           , padx=40
+                          , command = delete
                           )
     btnDelete.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
 
@@ -891,6 +971,10 @@ def modelIDCreate():
 
     # Pack
     tree.pack(pady=(10,0), padx=(10,0), anchor="n")
+
+    # Event Binding
+    tree.bind("<<TreeviewSelect>>", on_select)
+    refresh()
 
     return frame
 
@@ -1417,6 +1501,17 @@ def modelRoomCreate():
                               width=25
                               )
     rTypeCombo.grid(row=0, column=4, padx=(20, 10))
+
+    rCapacity = tk.Label(roomInfo
+                         , text="Room Capacity:"
+                         , bg="white"
+                         )
+    rCapacity.grid(row=1, column=3, padx=(20, 10), pady=(25, 0))
+    rCapacityEntry = tk.Entry(roomInfo
+                              , bg="white"
+                              , width=25
+                              )
+    rCapacityEntry.grid(row=1, column=4, pady=(25, 0))
 
     rInfo = tk.Label(roomInfo
                      , text="Bed Type:"
