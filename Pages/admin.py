@@ -90,7 +90,8 @@ def loadRoomSQL(tree):
 
         # Insert into Treeview
         for row in rows:
-            tree.insert("", "end", values=row)
+            roomID = row[0]  # Assuming RoomID is the first column
+            tree.insert("", "end", iid=str(roomID), values=row)
 
         # Close
         cursor.close()
@@ -117,7 +118,6 @@ def deleteRoomSQL(tree):
 
         row_values = tree.item(selected_item)["values"]
         print("Selected row values:", row_values)
-
 
         roomID = int(row_values[0])
 
@@ -1502,11 +1502,14 @@ def modelRoomCreate():
             messagebox.showwarning("Select Room", "Please select a room to update.")
             return
 
+        selectedID = treeRoom.selection()
+
         selectRoomType = rTypeCombo.get()
         selectRStat = rStatCombo.get()
         selectRoomNumber = rNumberEntry.get().strip()
         selectBedType = btEntry.get().strip()
         selectRCapacity = rCapacityEntry.get().strip()
+        selectRoomID = int(selectedID[0])
 
         if not selectBedType and not selectRoomNumber:
             messagebox.showwarning("Missing Data", "Please fill in all fields.")
@@ -1530,9 +1533,9 @@ def modelRoomCreate():
             # Update room using Room Number as primary identifier (assumed)
             cursor.execute("""
                     UPDATE ROOM
-                    SET RoomType = ?, BedType = ?, RoomCapacity = ?,  Status = ?
-                    WHERE RoomNumber = ?
-                """, (selectRoomType, selectBedType, capacityValue, selectRStat, selectRoomNumber))
+                    SET RoomNumber = ?, RoomType = ?, BedType = ?, RoomCapacity = ?,  Status = ?
+                    WHERE RoomID = ?
+                """, (selectRoomNumber, selectRoomType, selectBedType, capacityValue, selectRStat, selectRoomID))
 
             conn.commit()
             conn.close()
