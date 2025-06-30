@@ -40,7 +40,7 @@ def centerScreen():
 
 
 
-# MODELS
+# SQL METHODS
 
 def createRoomSQL(roomNumber, roomType, bedType, roomCapacity, status, basePrice):
     try:
@@ -195,15 +195,138 @@ def filterResults(tree, filterBy, searchTerm):
         print("Error connecting to database:", e)
         return None
 
+def createStaffSQL(fName, mName, lName, uName, pWord):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        if not mName:
+            mName = " "
+
+        createStaff = """
+                INSERT INTO STAFF (FName, MName, LName, Username, Password, IsDeleted, Role)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(createStaff, (fName, mName, lName, uName, pWord, 0, "Staff"))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+
+        messagebox.showinfo("Success", "Staff is successfully created!")
 
 
 
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
+
+def loadStaffSQL(tree):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        selectStaff = """
+                   SELECT StaffID, FName, MName, LName, Username, Password
+                    FROM STAFF
+                    WHERE IsDeleted = 0
+           """
+        cursor.execute(selectStaff)
+        rows = cursor.fetchall()
+
+        # Clear existing data in Treeview
+        for item in tree.get_children():
+            tree.delete(item)
+
+        # Insert into Treeview
+        for row in rows:
+            staffID = row[0]  # Assuming RoomID is the first column
+            visible_values = row[1:] # skip staffID for visible columns
+            tree.insert("", "end", iid=str(staffID), values=visible_values)
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
+
+def updateStaffSQL(staffID, fName, mName, lName, uName, pWord):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        selectStaff = """
+                   UPDATE STAFF
+                   SET FName = ?, MName = ?, LName = ?, Username = ?, Password = ?
+                   WHERE StaffID = ?
+           """
+        cursor.execute(selectStaff, (fName, mName, lName, uName, pWord, staffID))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
+
+def softDeleteStaffSQL(staffID):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        selectStaff = """
+                   UPDATE STAFF
+                   SET IsDeleted = ?
+                   WHERE StaffID = ?
+           """
+        cursor.execute(selectStaff, (1, staffID))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
 
 
 
-
-
-
+# MODELS
 
 def modelTopFrame():
 
@@ -246,6 +369,9 @@ def modelDashboardFrame():
         btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
                              , fg="white"
                              )
+        btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                                , fg="white"
+                                )
 
     def onHistoryClick():
         AD_HISTORY_FRAME.lift()
@@ -264,6 +390,9 @@ def modelDashboardFrame():
         btnPricing.config(bg=DASHBOARD_FRAME_COLOR
                           , fg="white"
                           )
+        btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                                , fg="white"
+                                )
 
     def onIDCreateClick():
         AD_IDCREATE_FRAME.lift()
@@ -282,6 +411,9 @@ def modelDashboardFrame():
         btnPricing.config(bg=DASHBOARD_FRAME_COLOR
                           , fg="white"
                           )
+        btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                                , fg="white"
+                                )
 
     def onRoomCreateClick():
         AD_ROOMCREATE_FRAME.lift()
@@ -300,6 +432,9 @@ def modelDashboardFrame():
         btnPricing.config(bg=DASHBOARD_FRAME_COLOR
                            , fg="white"
                            )
+        btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                                , fg="white"
+                                )
 
     def onPricingClick():
         AD_PRICING_FRAME.lift()
@@ -318,6 +453,30 @@ def modelDashboardFrame():
         btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
                            , fg="white"
                            )
+        btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                             , fg="white"
+                             )
+
+    def onRegisterStaffClick():
+        AD_REGISTER_STAFF_FRAME.lift()
+        btnRegisterStaff.config(bg="white"
+                         , fg=DASHBOARD_BUTTON_COLOR
+                         )
+        btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
+                             , fg="white"
+                             )
+        btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                          , fg="white"
+                          )
+        btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
+                           , fg="white"
+                           )
+        btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
+                           , fg="white"
+                           )
+        btnPricing.config(bg=DASHBOARD_FRAME_COLOR
+                             , fg="white"
+                             )
 
     # Button Initialization
     dashboardFrame = tk.Frame(canvas
@@ -467,13 +626,42 @@ def modelDashboardFrame():
                             )
     btnPricing.pack(anchor="n")
 
+    buttonFrame8 = tk.Frame(dashboardFrame
+                            , bg=DASHBOARD_FRAME_COLOR
+                            , height=50
+                            , width=230
+                            )
+    buttonFrame8.pack_propagate(False)
+    buttonFrame8.pack(pady=(20, 0)
+                      , anchor="n"
+                      )
+
+    btnRegisterStaff = tk.Button(buttonFrame8
+                           , text="Register Staff"
+                           , fg="white"
+                           , bg=DASHBOARD_FRAME_COLOR
+                           , height=50
+                           , width=230
+                           , borderwidth=0
+                           , highlightthickness=0
+                           , activebackground="white"
+                           , activeforeground=DASHBOARD_BUTTON_COLOR
+                           , relief=tk.FLAT
+                           , font=tkFont.Font(family="Arial"
+                                              , size=12
+                                              , weight="bold"
+                                              )
+                           , command=onRegisterStaffClick
+                           )
+    btnRegisterStaff.pack(anchor="n")
+
     buttonFrame5 = tk.Frame(dashboardFrame
                             , bg=DASHBOARD_FRAME_COLOR
                             , height=50
                             , width=230
                             )
     buttonFrame5.pack_propagate(False)
-    buttonFrame5.pack(pady=(190, 0)
+    buttonFrame5.pack(pady=(120, 0)
                       , anchor="n"
                       )
 
@@ -1790,9 +1978,6 @@ def modelRoomCreate():
 
 def modelPricing():
 
-
-
-
     # The Json CRUD Functionality
     logic = RoomTypeService()
 
@@ -2053,7 +2238,353 @@ def modelPricing():
 
     return frame
 
+def modelStaffFrame():
 
+    # Note:
+    # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
+    # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
+    #                     it is moved around by canvas.
+
+    # Main Whole Frame
+    frame = tk.Frame(canvas
+                              , bg="white"
+                              , height=635
+                              , width=1050
+                              )
+    # This forces the frame to keep the fixed size regardless what's inside of it.
+    frame.pack_propagate(False)
+
+    # A scrollable canvas embedded in the bookingFrame and a scrollbar
+    scroll_canvas = tk.Canvas(frame, width = 1050, bg="white")
+    scrollbar = tk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
+
+    # Linking the canvas to the scrollbar so
+    # when the canvas moves the scrollbar's thumb pos will also move.
+    scroll_canvas.configure(yscrollcommand=scrollbar.set)
+
+    scrollbar.pack(side="right", fill="y")
+    # expand=True means the canvas will grow as the BookingFrame grows.
+    scroll_canvas.pack(side="left", fill="both", expand=True)
+
+    # This frame contains the actual scrollable contents
+    mainBookingFrame = tk.Frame(scroll_canvas, bg="white")
+    # Embedding the mainBookingFrame to the scroll canvas
+    scroll_canvas.create_window((0,0), window=mainBookingFrame, anchor="nw")
+
+
+    # Events
+
+    # This allows the canvas to know that the scrollable area has a specified tall
+    # so that it can be updated or be scrolled
+    def update_scrollregion(e):
+        canvas_height = scroll_canvas.winfo_height()
+        content_bbox = scroll_canvas.bbox("all")
+
+        if content_bbox:
+            content_height = content_bbox[3] - content_bbox[1]  # bottom - top
+
+            # Only set scrollregion if content is taller than the canvas
+            if content_height > canvas_height:
+                scroll_canvas.configure(scrollregion=content_bbox)
+            else:
+                # Lock scrolling — set scrollregion to visible canvas only
+                scroll_canvas.configure(scrollregion=(0, 0, 0, canvas_height))
+    # Whenever the frame changes size,
+    # it Recalculates the scroll region when the mainBookingFrame size changes
+    mainBookingFrame.bind("<Configure>", update_scrollregion)
+
+    def on_mousewheel(e):
+        content_bbox = scroll_canvas.bbox("all")
+        if content_bbox:
+            content_height = content_bbox[3] - content_bbox[1]
+            canvas_height = scroll_canvas.winfo_height()
+
+            if content_height > canvas_height:
+                scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+    scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
+    scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
+
+    # Main UI Elements inside
+
+    lblTitle = tk.Label(mainBookingFrame
+                        , text="Register your Staffs"
+                        , fg="black"
+                        , bg="white"
+                        , font=tkFont.Font(family="Arial"
+                                           , size=21
+                                           , weight="bold"
+                                           )
+                        )
+    lblTitle.pack(pady=(20, 0)
+                  , padx=(20, 0)
+                  , anchor="w"
+                  )
+
+    # ======================= ROOM TYPE INFO ===============================
+
+    roomTypeInfo = tk.LabelFrame(mainBookingFrame
+                             , text="Register an Employee"
+                             , padx=20
+                             , pady=20
+                             , bg="white"
+                             , font=tkFont.Font(family="Arial"
+                                                , size=12
+                                                , weight="bold"
+                                                )
+                             )
+    roomTypeInfo.pack(padx=20
+                  , pady=20
+                  , anchor = "nw"
+                  )
+
+    fName = tk.Label(roomTypeInfo
+                     , text="First Name:"
+                     , bg="white"
+                     , anchor="w"
+                     )
+    fName.grid(row=0, column=1, padx=(0, 10))
+    fNameEntry = tk.Entry(roomTypeInfo
+                          , bg="white"
+                          , width=25
+                          )
+    fNameEntry.grid(row=0, column=2, padx=(0, 10))
+
+    mName = tk.Label(roomTypeInfo
+                     , text="Middle Name:"
+                     , bg="white"
+                     , anchor="w"
+                     )
+    mName.grid(row=0, column=3, padx=(0, 10))
+    mNameEntry = tk.Entry(roomTypeInfo
+                          , bg="white"
+                          , width=25
+                          )
+    mNameEntry.grid(row=0, column=4)
+
+    lName = tk.Label(roomTypeInfo
+                     , text="Last Name:"
+                     , bg="white"
+                     , anchor="w"
+                     )
+    lName.grid(row=0, column=5, padx=(0, 10))
+    lNameEntry = tk.Entry(roomTypeInfo
+                          , bg="white"
+                          , width=25
+                          )
+    lNameEntry.grid(row=0, column=6)
+
+    userName = tk.Label(roomTypeInfo, text="Username:", bg="white", anchor="w")
+    userName.grid(row=1, column=1, pady=(20,0))
+    userNameEntry = tk.Entry(roomTypeInfo, bg="white", width=25)
+    userNameEntry.grid(row=1, column=2, pady=(20,0))
+
+    password = tk.Label(roomTypeInfo, text="Password:", bg="white", anchor="w")
+    password.grid(row=1, column=3, pady=(20, 0), padx=(10, 0))
+    passwordEntry = tk.Entry(roomTypeInfo, bg="white", width=25)
+    passwordEntry.grid(row=1, column=4, pady=(20, 0), padx=(10, 0))
+
+    # -- METHODS --
+
+    def validateFields():
+        if (not fNameEntry.get().strip() or
+                not lNameEntry.get().strip() or
+                not userNameEntry.get().strip() or
+                not passwordEntry.get().strip()):
+            messagebox.showwarning("Missing Fields", "Fields cannot be empty.")
+            return
+
+        createStaffSQL(fNameEntry.get().strip()
+                       , mNameEntry.get().strip()
+                       , lNameEntry.get().strip()
+                       , userNameEntry.get().strip()
+                       , passwordEntry.get().strip()
+                       )
+
+        fNameEntry.delete(0, tk.END)
+        mNameEntry.delete(0, tk.END)
+        lNameEntry.delete(0, tk.END)
+        userNameEntry.delete(0, tk.END)
+        passwordEntry.delete(0, tk.END)
+
+        loadStaffSQL(tree)
+
+
+    def onSelect(e):
+        selectedItem = tree.focus()
+        if selectedItem:
+            values = tree.item(selectedItem, 'values')
+
+            fNameEntry.delete(0, tk.END)
+            fNameEntry.insert(0, values[0])
+
+            mNameEntry.delete(0, tk.END)
+            mNameEntry.insert(0, values[1])
+
+            lNameEntry.delete(0, tk.END)
+            lNameEntry.insert(0, values[2])
+
+            userNameEntry.delete(0, tk.END)
+            userNameEntry.insert(0, values[3])
+
+            passwordEntry.delete(0, tk.END)
+            passwordEntry.insert(0, values[4])
+
+            btnCreateStaff.config(state="disabled")
+
+
+    def updateRecord():
+        selectedItem = tree.focus()
+        if selectedItem:
+            staffID = int(selectedItem)
+            values = tree.item(selectedItem, 'values')
+
+            if (not fNameEntry.get().strip() or
+                    not lNameEntry.get().strip() or
+                    not userNameEntry.get().strip() or
+                    not passwordEntry.get().strip()):
+                messagebox.showwarning("Missing Fields", "Fields cannot be empty.")
+                return
+
+            newFName = fNameEntry.get().strip()
+            newMName = mNameEntry.get().strip()
+            newLName = lNameEntry.get().strip()
+            newUName = userNameEntry.get().strip()
+            newPWord = passwordEntry.get().strip()
+
+            updateStaffSQL(staffID
+                           , newFName
+                           , newMName
+                           , newLName
+                           , newUName
+                           , newPWord
+                           )
+
+            messagebox.showinfo("Success", "Record updated successfully.")
+
+            loadStaffSQL(tree)
+            clearFields()
+        else:
+            messagebox.showwarning("Missing Fields", "Fields cannot be empty.")
+            return
+
+
+    def softDeleteRecord():
+        selectedItem = tree.focus()
+        if selectedItem:
+            staffID = int(selectedItem)
+
+            softDeleteStaffSQL(staffID)
+
+            messagebox.showinfo("Success", "Record deleted successfully.")
+
+            loadStaffSQL(tree)
+            clearFields()
+        else:
+            messagebox.showwarning("Missing Fields", "Fields cannot be empty.")
+            return
+
+
+    def clearFields():
+        fNameEntry.delete(0, tk.END)
+        mNameEntry.delete(0, tk.END)
+        lNameEntry.delete(0, tk.END)
+        userNameEntry.delete(0, tk.END)
+        passwordEntry.delete(0, tk.END)
+        btnCreateStaff.config(state="normal")
+
+
+
+
+    # -- METHODS --
+
+
+
+    btnCreateStaff = tk.Button(roomTypeInfo
+                          , text="Create"
+                          , width=20
+                          , pady=10
+                          , command=validateFields
+                          )
+    btnCreateStaff.grid(row=2, column=2, pady=(20, 0))
+
+    btnUpdateStaff = tk.Button(roomTypeInfo
+                          , text="Update"
+                          , width=20
+                          , pady=10
+                          , command=updateRecord
+                          )
+    btnUpdateStaff.grid(row=2, column=4, pady=(20, 0), padx=(20, 0))
+
+    btnDeleteStaff = tk.Button(roomTypeInfo
+                          , text="Delete"
+                          , width=20
+                          , pady=10
+                          , command=softDeleteRecord
+                          )
+    btnDeleteStaff.grid(row=2, column=6, pady=(20, 0), padx=(20, 0))
+
+    treeContainer = tk.Frame(mainBookingFrame
+                             , width=1000
+                             , height=400
+                             , bg="white"
+                             )
+    treeContainer.pack(padx=(13, 0), pady=5)
+    treeContainer.pack_propagate(False)
+
+    # Treeview Widget
+    tree = ttk.Treeview(treeContainer, show="headings", height=17)
+
+    # Columns
+    tree['columns'] = ("FirstName"
+                       , "MiddleName"
+                       , "LastName"
+                       , "Username"
+                       )
+
+    # Formatting Columns
+    tree.column("FirstName"
+                , anchor=tk.W
+                , width=150
+                )
+    tree.column("MiddleName"
+                , anchor=tk.W
+                , width=150
+                )
+    tree.column("LastName"
+                , anchor=tk.W
+                , width=150
+                )
+    tree.column("Username"
+                , anchor=tk.W
+                , width=150
+                )
+
+    # Create Headings
+    tree.heading("FirstName"
+                 , text="First Name"
+                 , anchor=tk.W
+                 )
+    tree.heading("MiddleName"
+                 , text="Middle Name"
+                 , anchor=tk.W
+                 )
+    tree.heading("LastName"
+                 , text="Last Name"
+                 , anchor=tk.W
+                 )
+    tree.heading("Username"
+                 , text="Username"
+                 , anchor=tk.W
+                 )
+
+    # Pack
+    tree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
+    tree.bind("<<TreeviewSelect>>", onSelect)
+
+    loadStaffSQL(tree)
+
+
+    return frame
 
 
 
@@ -2098,6 +2629,7 @@ AD_HISTORY_FRAME = modelHistoryFrame()
 AD_IDCREATE_FRAME = modelIDCreate()
 AD_ROOMCREATE_FRAME = modelRoomCreate()
 AD_PRICING_FRAME = modelPricing()
+AD_REGISTER_STAFF_FRAME = modelStaffFrame()
 
 
 
@@ -2144,28 +2676,15 @@ id7 = canvas.create_window( 230
                       , anchor="w"
                       )
 
+id8 = canvas.create_window( 230
+                      , windowHeight // 2 + 42
+                      , window=AD_REGISTER_STAFF_FRAME
+                      , anchor="w"
+                      )
+
 
 # Canvas Config
 AD_ROOMSTAT_FRAME.lift()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Application Loop
 root.mainloop()
