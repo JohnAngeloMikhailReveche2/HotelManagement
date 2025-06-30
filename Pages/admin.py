@@ -57,7 +57,6 @@ def createRoomSQL(roomNumber, roomType, bedType, roomCapacity, status, basePrice
                 INSERT INTO ROOM (RoomNumber, RoomType, BedType, RoomCapacity, Status, Base_Price)
                 VALUES (?, ?, ?, ?, ?, ?)
         """
-
         cursor.execute(createRoom, (roomNumber, roomType, bedType, roomCapacity, status, basePrice))
         conn.commit()
 
@@ -67,6 +66,76 @@ def createRoomSQL(roomNumber, roomType, bedType, roomCapacity, status, basePrice
         print("Error conttecting to database:", e)
         return None
 
+def loadRoomSQL(tree):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        loadRooms = """
+                SELECT RoomID, RoomNumber, RoomType, BedType, RoomCapacity, Status
+                FROM ROOM
+        """
+
+        # Execute and Fetch
+        cursor.execute(loadRooms)
+        rows = cursor.fetchall()
+
+        # Insert into Treeview
+        for row in rows:
+            tree.insert("", "end", values=row)
+
+        # Close
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
+
+def deleteRoomSQL(tree):
+    try:
+        selected_item = tree.selection()
+
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        row_values = tree.item(selected_item)["values"]
+        print("Selected row values:", row_values)
+
+
+        roomID = int(row_values[0])
+
+
+        # Delete from SQLite
+        cursor.execute("DELETE FROM ROOM WHERE RoomID = ?", (roomID,))
+        conn.commit()
+
+        # Delete from Treeview
+        tree.delete(selected_item)
+
+        # Close
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
 
 
 
@@ -1349,21 +1418,45 @@ def modelRoomCreate():
     rCapacityEntry.grid(row=1, column=4, pady=(25,0))
 
     # METHODS ========================================
+    def validateFields():
+        selectRoomNumber = rNumberEntry.get().strip()
+        selectBedType = btEntry.get().strip()
+        selectRCapacity = rCapacityEntry.get().strip()
+
+        if not selectBedType and not selectRoomNumber:
+            messagebox.showwarning("Missing Data", "Please fill in all fields.")
+            return
+
+        # Check if capacity is numeric
+        try:
+            capacityValue = int(selectRCapacity)
+        except ValueError:
+            messagebox.showwarning("Invalid Data", "Capacity must be a whole number.")
+            return
+
+        # Create the Room
+        createRoomRecord(capacityValue)
+
+
     def get_base_price_by_name(data, name):
         for item in data:
             if item['name'] == name:
                 return item['base_price']
         return None  # or some default value if not found
 
-    def createRoomRecord():
-        selectRoomNumber = rNumberEntry.get()
+
+    def createRoomRecord(capacityValue):
+        selectRoomNumber = rNumberEntry.get().strip()
+        selectBedType = btEntry.get().strip()
         selectRoomType = rTypeCombo.get()
-        selectBedType = btEntry.get()
         selectRStat = rStatCombo.get()
-        selectRCapacity = rCapacityEntry.get()
         selectRoomTypePrice = get_base_price_by_name(logic.read_all(), selectRoomType)
-        createRoomSQL(selectRoomNumber, selectRoomType, selectBedType, selectRStat, selectRCapacity, selectRoomTypePrice)
+
+        createRoomSQL(selectRoomNumber, selectRoomType, selectBedType, capacityValue, selectRStat, selectRoomTypePrice)
         clearCreateRoomFields()
+        messagebox.showinfo("Success", "Room added successfully!")
+        loadRoomData()
+
 
     def clearCreateRoomFields():
         rNumberEntry.delete(0, tk.END)
@@ -1371,21 +1464,115 @@ def modelRoomCreate():
         btEntry.delete(0, tk.END)
         rStatCombo.current(0)
         rCapacityEntry.delete(0, tk.END)
-
     # METHODS ========================================
 
     btnCreate = tk.Button(roomInfo
                           , text="Create"
                           , width=20
                           , pady=10
-                          , command = createRoomRecord
+                          , command = validateFields
                           )
     btnCreate.grid(row=2, column=2, pady=(40,0))
+
+    # METHODS ========================================
+
+    def onRoomsSelect(e):
+        selected = treeRoom.focus()  # get selected item's ID
+        if selected:
+            values = treeRoom.item(selected, 'values')
+            rNumberEntry.delete(0, tk.END)
+            rNumberEntry.insert(0, values[1])
+
+            rTypeCombo.set(values[2])
+
+            btEntry.delete(0, tk.END)
+            btEntry.insert(0, values[3])
+
+            rCapacityEntry.delete(0, tk.END)
+            rCapacityEntry.insert(0, values[4])
+
+            rStatCombo.set(values[5])
+
+            btnCreate.config(state="disabled")
+
+
+    def updateRoomRecord():
+        selected = treeRoom.focus()
+        if not selected:
+            messagebox.showwarning("Select Room", "Please select a room to update.")
+            return
+
+        selectRoomType = rTypeCombo.get()
+        selectRStat = rStatCombo.get()
+        selectRoomNumber = rNumberEntry.get().strip()
+        selectBedType = btEntry.get().strip()
+        selectRCapacity = rCapacityEntry.get().strip()
+
+        if not selectBedType and not selectRoomNumber:
+            messagebox.showwarning("Missing Data", "Please fill in all fields.")
+            return
+
+        # Check if capacity is numeric
+        try:
+            capacityValue = int(selectRCapacity)
+        except ValueError:
+            messagebox.showwarning("Invalid Data", "Capacity must be a whole number.")
+            return
+
+        try:
+            # Build the correct DB path
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.normpath(os.path.join(script_dir, '..', 'Database', 'hotelManagement.db'))
+
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            # Update room using Room Number as primary identifier (assumed)
+            cursor.execute("""
+                    UPDATE ROOM
+                    SET RoomType = ?, BedType = ?, RoomCapacity = ?,  Status = ?
+                    WHERE RoomNumber = ?
+                """, (selectRoomType, selectBedType, capacityValue, selectRStat, selectRoomNumber))
+
+            conn.commit()
+            conn.close()
+
+            messagebox.showinfo("Success", "Room updated successfully.")
+            loadRoomData()  # Refresh tree
+            clearCreateRoomFields() # Clear Room Fields
+            btnCreate.config(state="normal") # Re-enable
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update room.\n{e}")
+
+
+    def on_deselect():
+        # Clear Treeview selection
+        treeRoom.selection_remove(treeRoom.selection())
+        # Clear Room Fields
+        clearCreateRoomFields()
+        # Enable Create button
+        btnCreate.config(state="normal")
+
+
+    def onDelete():
+        selected = treeRoom.focus()
+        if not selected:
+            messagebox.showwarning("Select Room", "Please select a room to update.")
+            return
+
+        deleteRoomSQL(treeRoom)
+        messagebox.showinfo("Deleted", f"Room deleted.")
+        clearCreateRoomFields()
+        btnCreate.config(state="normal")
+
+    # METHODS ========================================
 
     btnUpdate = tk.Button(roomInfo
                           , text="Update"
                           , width=20
                           , pady=10
+                          , command = updateRoomRecord
                           )
     btnUpdate.grid(row=2, column=4, pady=(40, 0))
 
@@ -1393,8 +1580,20 @@ def modelRoomCreate():
                           , text="Delete"
                           , width=20
                           , pady=10
+                          , command = onDelete
                           )
     btnDelete.grid(row=2, column=6, pady=(40, 0))
+
+    btnDeselect = tk.Button(roomInfo
+                          , text="Deselect"
+                          , width=20
+                          , pady=10
+                          , command = on_deselect
+                          )
+    btnDeselect.grid(row=3, column=6, pady=(20, 0))
+
+
+
 
 
 
@@ -1411,31 +1610,45 @@ def modelRoomCreate():
     treeRoom = ttk.Treeview(treeRoomContainer, show="headings", height=17)
 
     # Columns
-    treeRoom['columns'] = ("RoomNumber"
+    treeRoom['columns'] = ("RoomID"
+                           , "RoomNumber"
                            , "RoomType"
                            , "BedType"
+                           , "RoomCapacity"
                            , "Status"
                        )
 
     # Formatting Columns
-    treeRoom.column("RoomType"
-                , anchor=tk.W
-                , width=200
-                )
-    treeRoom.column("RoomNumber"
+    treeRoom.column("RoomID"
                     , anchor=tk.W
-                    , width=200
+                    , width=150
+                    )
+    treeRoom.column("RoomNumber"
+                , anchor=tk.W
+                , width=150
+                )
+    treeRoom.column("RoomType"
+                    , anchor=tk.W
+                    , width=150
                     )
     treeRoom.column("BedType"
                     , anchor=tk.W
-                    , width=200
+                    , width=150
+                    )
+    treeRoom.column("RoomCapacity"
+                    , anchor=tk.W
+                    , width=150
                     )
     treeRoom.column("Status"
                     , anchor=tk.W
-                    , width=200
+                    , width=150
                     )
 
     # Create Headings
+    treeRoom.heading("RoomID"
+                     , text="Room ID"
+                     , anchor=tk.W
+                     )
     treeRoom.heading("RoomNumber"
                  , text="Room Number"
                  , anchor=tk.W
@@ -1448,6 +1661,10 @@ def modelRoomCreate():
                      , text="Bed Type"
                      , anchor=tk.W
                      )
+    treeRoom.heading("RoomCapacity"
+                     , text="Room Capacity"
+                     , anchor=tk.W
+                     )
     treeRoom.heading("Status"
                      , text="Status"
                      , anchor=tk.W
@@ -1455,6 +1672,23 @@ def modelRoomCreate():
 
     # Pack
     treeRoom.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
+    treeRoom.bind("<<TreeviewSelect>>", onRoomsSelect)
+
+
+    # TREE VIEW METHODS ===========================================
+
+    def loadRoomData():
+        # Clear Existing Rows to avoid duplicates
+        for item in treeRoom.get_children():
+            treeRoom.delete(item)
+
+        # Load new data
+        loadRoomSQL(treeRoom)
+
+    # TREE VIEW METHODS ===========================================
+
+    # Load the Room Data from Database
+    loadRoomData()
 
     return frame
 
