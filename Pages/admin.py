@@ -5,8 +5,12 @@ from tkinter import ttk
 import tkinter.font as tkFont
 from tkcalendar import DateEntry
 
+import sqlite3
+import os
+
 # Classes
 from Classes.admin.IDService import IDService
+from Classes.admin.RoomTypeService import RoomTypeService
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
@@ -31,6 +35,37 @@ def centerScreen():
 
     # Set the geometry based on the Window and Screen Calculations
     root.geometry(f"{windowWidth}x{windowHeight}+{centerX}+{centerY}")
+
+
+
+# MODELS
+
+def createRoomSQL(roomNumber, roomType, bedType, roomCapacity, status, basePrice):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        conn = sqlite3.connect(db_path)
+
+        cursor = conn.cursor()
+
+        createRoom = """
+                INSERT INTO ROOM (RoomNumber, RoomType, BedType, RoomCapacity, Status, Base_Price)
+                VALUES (?, ?, ?, ?, ?, ?)
+        """
+
+        cursor.execute(createRoom, (roomNumber, roomType, bedType, roomCapacity, status, basePrice))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print("Error conttecting to database:", e)
+        return None
 
 
 
@@ -980,6 +1015,86 @@ def modelIDCreate():
 
 def modelRoomCreate():
 
+    # The Json CRUD Functionality
+    logic = RoomTypeService()
+
+    # Methods
+
+    selected_index = [None]  # Mutable container for selected index
+
+    def rts_refresh():
+        for i in tree.get_children():
+            tree.delete(i)
+        for idx, item in enumerate(logic.read_all()):
+            # Insert the 'name' in the treeview columns
+            tree.insert('', 'end', iid=str(idx), values=(item['name']))
+
+    def rts_clear():
+        rTypeEntry.delete(0, tk.END)
+        selected_index[0] = None  # Reset selection on clear
+
+    def rts_on_select(e):
+        selected = tree.focus()
+        if selected:
+            selected_index[0] = int(selected)
+            name = tree.item(selected, 'values')[0]
+            rTypeEntry.delete(0, tk.END)
+            rTypeEntry.insert(0, name)
+        else:
+            selected_index[0] = None
+
+    def rts_add():
+        name = rTypeEntry.get().strip()
+        if not name:
+            messagebox.showwarning("Missing", "Name is required.")
+            return
+        if selected_index[0] is not None:
+            data = logic.read_all()
+            if selected_index[0] < len(data) and data[selected_index[0]]['name'] == name:
+                messagebox.showwarning("Duplicate", "This item is already selected. Use Update instead.")
+                return
+        success, msg = logic.add(name, 0)
+        if success:
+            rts_refresh()
+            rts_clear()
+            roomTypeCmbRefresh()
+        else:
+            messagebox.showerror("Error", msg)
+
+    def rts_update():
+        if selected_index[0] is None:
+            messagebox.showinfo("Select", "Select an entry to update.")
+            return
+        name = rTypeEntry.get().strip()
+        if not name:
+            messagebox.showwarning("Missing", "Name is required.")
+            return
+        data = logic.read_all()
+        if selected_index[0] < len(data) and data[selected_index[0]]['name'] == name:
+            messagebox.showinfo("No changes", "The name is the same as before.")
+            return
+        success, msg = logic.update(selected_index[0], name, 0)
+        if success:
+            rts_refresh()
+            rts_clear()
+            roomTypeCmbRefresh()
+        else:
+            messagebox.showerror("Error", msg)
+
+    def rts_delete():
+        selected = tree.focus()
+        if not selected:
+            messagebox.showinfo("Select", "Select an entry to delete.")
+            return
+        confirm = messagebox.askyesno("Confirm", "Are you sure you want to delete this?")
+        if confirm:
+            success, msg = logic.delete(int(selected))
+            if success:
+                rts_refresh()
+                rts_clear()
+            else:
+                messagebox.showerror("Error", msg)
+
     # Note:
     # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
     # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
@@ -1044,7 +1159,6 @@ def modelRoomCreate():
     scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
     scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
 
-
     # Main UI Elements inside
 
     lblTitle = tk.Label(mainBookingFrame
@@ -1090,35 +1204,29 @@ def modelRoomCreate():
                           )
     rTypeEntry.grid(row=0, column=2)
 
-    btnCreate = tk.Button(roomTypeInfo
+    btnCreateRT = tk.Button(roomTypeInfo
                           , text="Create"
                           , width=20
                           , pady=10
+                          , command= lambda: rts_add()
                           )
-    btnCreate.grid(row=1, column=2, pady=(20, 0))
+    btnCreateRT.grid(row=1, column=2, pady=(20, 0))
 
-    btnUpdate = tk.Button(roomTypeInfo
+    btnUpdateRT = tk.Button(roomTypeInfo
                           , text="Update"
                           , width=20
                           , pady=10
+                          , command=rts_update
                           )
-    btnUpdate.grid(row=1, column=4, pady=(20, 0), padx=(20, 0))
+    btnUpdateRT.grid(row=1, column=4, pady=(20, 0), padx=(20, 0))
 
-    btnDelete = tk.Button(roomTypeInfo
+    btnDeleteRT = tk.Button(roomTypeInfo
                           , text="Delete"
                           , width=20
                           , pady=10
+                          , command=rts_delete
                           )
-    btnDelete.grid(row=1, column=6, pady=(20, 0), padx=(20, 0))
-
-
-
-
-
-
-
-
-
+    btnDeleteRT.grid(row=1, column=6, pady=(20, 0), padx=(20, 0))
 
     treeContainer = tk.Frame(mainBookingFrame
                              , width=1000
@@ -1149,6 +1257,11 @@ def modelRoomCreate():
 
     # Pack
     tree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
+
+    # Tree Config
+    tree.bind("<<TreeviewSelect>>", rts_on_select)
+    rts_refresh()
+
 
     # ======================= ROOM INFO ===============================
 
@@ -1185,26 +1298,35 @@ def modelRoomCreate():
                      )
     rTypeSelect.grid(row=0, column=3, padx=(20,10))
     rTypeCombo = ttk.Combobox(roomInfo,
-                         values=["Single", "Double", "Family"],
                          state="readonly",
                          font=("Arial", 10),
                          width=25
                               )
     rTypeCombo.grid(row=0, column=4, padx=(20, 10))
 
-    rInfo = tk.Label(roomInfo
+    # Define a function here for refreshing
+    def roomTypeCmbRefresh():
+        # Combo Box Initialization
+        roomTypeData = logic.read_all()
+        roomTypes = [item['name'] for item in roomTypeData]
+        rTypeCombo['values'] = roomTypes
+
+    # Load the data the first initialization
+    roomTypeCmbRefresh()
+
+    btLabel = tk.Label(roomInfo
                      , text="Bed Type:"
                      , bg="white"
                      )
-    rInfo.grid(row=0, column=5, padx=(20,10))
-    rInfoEntry = tk.Entry(roomInfo
+    btLabel.grid(row=0, column=5, padx=(20,10))
+    btEntry = tk.Entry(roomInfo
                           , bg="white"
                           , width=25
                           )
-    rInfoEntry.grid(row=0, column=6)
+    btEntry.grid(row=0, column=6)
 
     rStat = tk.Label(roomInfo
-                     , text="Room Type:"
+                     , text="Status:"
                      , bg="white"
                      )
     rStat.grid(row=1, column=5, padx=(20, 10), pady=(20, 0))
@@ -1215,10 +1337,48 @@ def modelRoomCreate():
                          width=20)
     rStatCombo.grid(row=1, column=6, padx=(20, 10), pady=(20, 0))
 
+    rCapacity = tk.Label(roomInfo
+                     , text="Room Capacity:"
+                     , bg="white"
+                     )
+    rCapacity.grid(row=1, column=3, padx=(20, 10), pady=(27,0))
+    rCapacityEntry = tk.Entry(roomInfo
+                          , bg="white"
+                          , width=27
+                          )
+    rCapacityEntry.grid(row=1, column=4, pady=(25,0))
+
+    # METHODS ========================================
+    def get_base_price_by_name(data, name):
+        for item in data:
+            if item['name'] == name:
+                return item['base_price']
+        return None  # or some default value if not found
+
+    def createRoomRecord():
+        selectRoomNumber = rNumberEntry.get()
+        selectRoomType = rTypeCombo.get()
+        selectBedType = btEntry.get()
+        selectRStat = rStatCombo.get()
+        selectRCapacity = rCapacityEntry.get()
+        selectRoomTypePrice = get_base_price_by_name(logic.read_all(), selectRoomType)
+        createRoomSQL(selectRoomNumber, selectRoomType, selectBedType, selectRStat, selectRCapacity, selectRoomTypePrice)
+        clearCreateRoomFields()
+
+    def clearCreateRoomFields():
+        rNumberEntry.delete(0, tk.END)
+        rTypeCombo.current(0)
+        btEntry.delete(0, tk.END)
+        rStatCombo.current(0)
+        rCapacityEntry.delete(0, tk.END)
+
+    # METHODS ========================================
+
     btnCreate = tk.Button(roomInfo
                           , text="Create"
                           , width=20
                           , pady=10
+                          , command = createRoomRecord
                           )
     btnCreate.grid(row=2, column=2, pady=(40,0))
 
@@ -1280,325 +1440,6 @@ def modelRoomCreate():
                  , text="Room Number"
                  , anchor=tk.W
                  )
-    treeRoom.heading("RoomType"
-                     , text="Room Type"
-                     , anchor=tk.W
-                     )
-    treeRoom.heading("BedType"
-                     , text="Bed Type"
-                     , anchor=tk.W
-                     )
-    treeRoom.heading("Status"
-                     , text="Status"
-                     , anchor=tk.W
-                     )
-
-    # Pack
-    treeRoom.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
-
-    return frame
-
-def modelRoomCreate():
-    # Note:
-    # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
-    # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
-    #                     it is moved around by canvas.
-
-    # Main Whole Frame
-    frame = tk.Frame(canvas
-                     , bg="white"
-                     , height=635
-                     , width=1050
-                     )
-    # This forces the frame to keep the fixed size regardless what's inside of it.
-    frame.pack_propagate(False)
-
-    # A scrollable canvas embedded in the bookingFrame and a scrollbar
-    scroll_canvas = tk.Canvas(frame, width=1050, bg="white")
-    scrollbar = tk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
-
-    # Linking the canvas to the scrollbar so
-    # when the canvas moves the scrollbar's thumb pos will also move.
-    scroll_canvas.configure(yscrollcommand=scrollbar.set)
-
-    scrollbar.pack(side="right", fill="y")
-    # expand=True means the canvas will grow as the BookingFrame grows.
-    scroll_canvas.pack(side="left", fill="both", expand=True)
-
-    # This frame contains the actual scrollable contents
-    mainBookingFrame = tk.Frame(scroll_canvas, bg="white")
-    # Embedding the mainBookingFrame to the scroll canvas
-    scroll_canvas.create_window((0, 0), window=mainBookingFrame, anchor="nw")
-
-    # Events
-
-    # This allows the canvas to know that the scrollable area has a specified tall
-    # so that it can be updated or be scrolled
-    def update_scrollregion(e):
-        canvas_height = scroll_canvas.winfo_height()
-        content_bbox = scroll_canvas.bbox("all")
-
-        if content_bbox:
-            content_height = content_bbox[3] - content_bbox[1]  # bottom - top
-
-            # Only set scrollregion if content is taller than the canvas
-            if content_height > canvas_height:
-                scroll_canvas.configure(scrollregion=content_bbox)
-            else:
-                # Lock scrolling — set scrollregion to visible canvas only
-                scroll_canvas.configure(scrollregion=(0, 0, 0, canvas_height))
-
-    # Whenever the frame changes size,
-    # it Recalculates the scroll region when the mainBookingFrame size changes
-    mainBookingFrame.bind("<Configure>", update_scrollregion)
-
-    def on_mousewheel(e):
-        content_bbox = scroll_canvas.bbox("all")
-        if content_bbox:
-            content_height = content_bbox[3] - content_bbox[1]
-            canvas_height = scroll_canvas.winfo_height()
-
-            if content_height > canvas_height:
-                scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-
-    scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
-    scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
-
-    # Main UI Elements inside
-
-    lblTitle = tk.Label(mainBookingFrame
-                        , text="Create A Room"
-                        , fg="black"
-                        , bg="white"
-                        , font=tkFont.Font(family="Arial"
-                                           , size=21
-                                           , weight="bold"
-                                           )
-                        )
-    lblTitle.pack(pady=(20, 0)
-                  , padx=(20, 0)
-                  , anchor="w"
-                  )
-
-    # ======================= ROOM TYPE INFO ===============================
-
-    roomTypeInfo = tk.LabelFrame(mainBookingFrame
-                                 , text="Room Type Creation"
-                                 , padx=20
-                                 , pady=20
-                                 , bg="white"
-                                 , font=tkFont.Font(family="Arial"
-                                                    , size=12
-                                                    , weight="bold"
-                                                    )
-                                 )
-    roomTypeInfo.pack(padx=20
-                      , pady=20
-                      , anchor="nw"
-                      )
-
-    rType = tk.Label(roomTypeInfo
-                     , text="Room Type:"
-                     , bg="white"
-                     , anchor="w"
-                     )
-    rType.grid(row=0, column=1, padx=(0, 10))
-    rTypeEntry = tk.Entry(roomTypeInfo
-                          , bg="white"
-                          , width=25
-                          )
-    rTypeEntry.grid(row=0, column=2)
-
-    btnCreate = tk.Button(roomTypeInfo
-                          , text="Create"
-                          , width=20
-                          , pady=10
-                          )
-    btnCreate.grid(row=1, column=2, pady=(20, 0))
-
-    btnUpdate = tk.Button(roomTypeInfo
-                          , text="Update"
-                          , width=20
-                          , pady=10
-                          )
-    btnUpdate.grid(row=1, column=4, pady=(20, 0), padx=(20, 0))
-
-    btnDelete = tk.Button(roomTypeInfo
-                          , text="Delete"
-                          , width=20
-                          , pady=10
-                          )
-    btnDelete.grid(row=1, column=6, pady=(20, 0), padx=(20, 0))
-
-    treeContainer = tk.Frame(mainBookingFrame
-                             , width=1000
-                             , height=400
-                             , bg="white"
-                             )
-    treeContainer.pack(padx=(13, 0), pady=5)
-    treeContainer.pack_propagate(False)
-
-    # Treeview Widget
-    tree = ttk.Treeview(treeContainer, show="headings", height=17)
-
-    # Columns
-    tree['columns'] = ("RoomType"
-                       )
-
-    # Formatting Columns
-    tree.column("RoomType"
-                , anchor=tk.W
-                , width=650
-                )
-
-    # Create Headings
-    tree.heading("RoomType"
-                 , text="Room Type"
-                 , anchor=tk.W
-                 )
-
-    # Pack
-    tree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
-
-    # ======================= ROOM INFO ===============================
-
-    roomInfo = tk.LabelFrame(mainBookingFrame
-                             , text="Room Creation"
-                             , padx=20
-                             , pady=20
-                             , bg="white"
-                             , font=tkFont.Font(family="Arial"
-                                                , size=12
-                                                , weight="bold"
-                                                )
-                             )
-    roomInfo.pack(padx=20
-                  , pady=20
-                  , anchor="nw"
-                  )
-
-    rNumber = tk.Label(roomInfo
-                       , text="Room Number:"
-                       , bg="white"
-                       , anchor="w"
-                       )
-    rNumber.grid(row=0, column=1, padx=(0, 10))
-    rNumberEntry = tk.Entry(roomInfo
-                            , bg="white"
-                            , width=25
-                            )
-    rNumberEntry.grid(row=0, column=2)
-
-    rTypeSelect = tk.Label(roomInfo
-                           , text="Room Type:"
-                           , bg="white"
-                           )
-    rTypeSelect.grid(row=0, column=3, padx=(20, 10))
-    rTypeCombo = ttk.Combobox(roomInfo,
-                              values=["Single", "Double", "Family"],
-                              state="readonly",
-                              font=("Arial", 10),
-                              width=25
-                              )
-    rTypeCombo.grid(row=0, column=4, padx=(20, 10))
-
-    rCapacity = tk.Label(roomInfo
-                         , text="Room Capacity:"
-                         , bg="white"
-                         )
-    rCapacity.grid(row=1, column=3, padx=(20, 10), pady=(25, 0))
-    rCapacityEntry = tk.Entry(roomInfo
-                              , bg="white"
-                              , width=25
-                              )
-    rCapacityEntry.grid(row=1, column=4, pady=(25, 0))
-
-    rInfo = tk.Label(roomInfo
-                     , text="Bed Type:"
-                     , bg="white"
-                     )
-    rInfo.grid(row=0, column=5, padx=(20, 10))
-    rInfoEntry = tk.Entry(roomInfo
-                          , bg="white"
-                          , width=25
-                          )
-    rInfoEntry.grid(row=0, column=6)
-
-    rStat = tk.Label(roomInfo
-                     , text="Room Type:"
-                     , bg="white"
-                     )
-    rStat.grid(row=1, column=5, padx=(20, 10), pady=(20, 0))
-    rStatCombo = ttk.Combobox(roomInfo,
-                              values=["Available", "Occupied", "Maintenance", "Under Construction",
-                                      "Not Available"],
-                              state="readonly",
-                              font=("Arial", 10),
-                              width=20)
-    rStatCombo.grid(row=1, column=6, padx=(20, 10), pady=(20, 0))
-
-    btnCreate = tk.Button(roomInfo
-                          , text="Create"
-                          , width=20
-                          , pady=10
-                          )
-    btnCreate.grid(row=2, column=2, pady=(40, 0))
-
-    btnUpdate = tk.Button(roomInfo
-                          , text="Update"
-                          , width=20
-                          , pady=10
-                          )
-    btnUpdate.grid(row=2, column=4, pady=(40, 0))
-
-    btnDelete = tk.Button(roomInfo
-                          , text="Delete"
-                          , width=20
-                          , pady=10
-                          )
-    btnDelete.grid(row=2, column=6, pady=(40, 0))
-
-    treeRoomContainer = tk.Frame(mainBookingFrame
-                                 , width=1000
-                                 , height=400
-                                 , bg="white"
-                                 )
-    treeRoomContainer.pack(padx=(13, 0), pady=5)
-    treeRoomContainer.pack_propagate(False)
-
-    # Treeview Widget
-    treeRoom = ttk.Treeview(treeRoomContainer, show="headings", height=17)
-
-    # Columns
-    treeRoom['columns'] = ("RoomNumber"
-                           , "RoomType"
-                           , "BedType"
-                           , "Status"
-                           )
-
-    # Formatting Columns
-    treeRoom.column("RoomType"
-                    , anchor=tk.W
-                    , width=200
-                    )
-    treeRoom.column("RoomNumber"
-                    , anchor=tk.W
-                    , width=200
-                    )
-    treeRoom.column("BedType"
-                    , anchor=tk.W
-                    , width=200
-                    )
-    treeRoom.column("Status"
-                    , anchor=tk.W
-                    , width=200
-                    )
-
-    # Create Headings
-    treeRoom.heading("RoomNumber"
-                     , text="Room Number"
-                     , anchor=tk.W
-                     )
     treeRoom.heading("RoomType"
                      , text="Room Type"
                      , anchor=tk.W
