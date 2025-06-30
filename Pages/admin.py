@@ -3,6 +3,8 @@ from email.policy import default
 from tkinter import messagebox as mb, StringVar, messagebox
 from tkinter import ttk
 import tkinter.font as tkFont
+from tokenize import String
+
 from tkcalendar import DateEntry
 
 import sqlite3
@@ -136,6 +138,70 @@ def deleteRoomSQL(tree):
     except Exception as e:
         print("Error connecting to database:", e)
         return None
+
+def filterResults(tree, filterBy, searchTerm):
+    try:
+        # Get the absolute path of this script file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Build the path to the database file
+        db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+        # Normalize the path (handle ../ correctly)
+        db_path = os.path.normpath(db_path)
+
+        column_map = {
+            "Room Type": "RoomType",
+            "Bed Type": "BedType",
+            "Status": "Status"
+        }
+
+        selectedFilter = filterBy.get()
+        keyword = searchTerm.get().strip()
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        filterSql = """
+                SELECT RoomID, RoomNumber, RoomType, BedType, RoomCapacity, Status
+                FROM ROOM
+        """
+        params = []
+
+        if selectedFilter == "All" and keyword:
+            # Search all three fields
+            filterSql += " WHERE RoomType LIKE ? OR BedType LIKE ? OR Status LIKE ?"
+            likeKeyword = f"%{keyword}%"
+            params.extend([likeKeyword, likeKeyword, likeKeyword])
+        elif selectedFilter in column_map and keyword:
+            column = column_map[selectedFilter]
+            filterSql += f" WHERE {column} LIKE ?"
+            params.append(f"%{keyword}%")
+
+        cursor.execute(filterSql, params)
+        rows = cursor.fetchall()
+
+        # Clear treeview and insert results
+        for item in tree.get_children():
+            tree.delete(item)
+
+        for idx, row in enumerate(rows):
+            tree.insert('', 'end', iid=str(idx), values=row)
+
+
+        # Close
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("Error connecting to database:", e)
+        return None
+
+
+
+
+
+
+
+
 
 
 
@@ -432,6 +498,9 @@ def modelDashboardFrame():
     return dashboardFrame
 
 def modelRoomStatus():
+
+
+
     # Note:
     # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
     # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
@@ -547,9 +616,11 @@ def modelRoomStatus():
     filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
     filterCmb.current(0)
 
+    searchTerm = StringVar()
     searchEntry = tk.Entry(btnFrame
                            , width=30
                            , borderwidth=3
+                           , textvariable=searchTerm
                            )
     searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
 
@@ -557,15 +628,9 @@ def modelRoomStatus():
                           , text="Search"
                           , pady=5
                           , padx=40
+                          , command= lambda: filterResults(roomTree, selectedFilter, searchTerm)
                           )
     btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
-
-    btnReset = tk.Button(btnFrame
-                         , text="Reset"
-                         , pady=5
-                         , padx=40
-                         )
-    btnReset.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
 
     treeContainer = tk.Frame(mainFrame
                              , width=1000
@@ -579,14 +644,20 @@ def modelRoomStatus():
     roomTree = ttk.Treeview(treeContainer, show="headings", height=17)
 
     # Columns
-    roomTree['columns'] = ("Room Number"
+    roomTree['columns'] = ("Room ID"
+                           , "Room Number"
                            , "Room Type"
                            , "Bed Type"
+                           , "Room Capacity"
                            , "Status"
                            )
 
     # Formatting Columns
     roomTree.column("Room Number"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+    roomTree.column("Room ID"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
@@ -598,14 +669,20 @@ def modelRoomStatus():
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
+    roomTree.column("Room Capacity"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
     roomTree.column("Status"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
 
     # Headings
+    roomTree.heading("Room ID", text="Room ID")
     roomTree.heading("Room Type", text="Room Type")
     roomTree.heading("Bed Type", text="Bed Type")
+    roomTree.heading("Room Capacity", text="Room Capacity")
     roomTree.heading("Room Number", text="Room Number")
     roomTree.heading("Status", text="Status")
 
@@ -619,6 +696,22 @@ def modelRoomStatus():
     # Pack
     roomTree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
     scrollbar.pack(side="bottom", fill="x")
+
+
+    # TREE VIEW METHODS ===========================================
+
+    def loadRoomData():
+        # Clear Existing Rows to avoid duplicates
+        for item in roomTree.get_children():
+            roomTree.delete(item)
+
+        # Load new data
+        loadRoomSQL(roomTree)
+
+    # TREE VIEW METHODS ===========================================
+
+    # Load the Room Data from Database
+    loadRoomData()
 
     return frame
 
@@ -1696,6 +1789,94 @@ def modelRoomCreate():
     return frame
 
 def modelPricing():
+
+
+
+
+    # The Json CRUD Functionality
+    logic = RoomTypeService()
+
+    # Methods
+
+    selected_index = [None]  # Mutable container for selected index
+
+    def refresh():
+        for i in tree.get_children():
+            tree.delete(i)
+
+        for idx, room in enumerate(logic.read_all()):
+            name = room["name"]
+            base_price = room["base_price"]
+            tree.insert('', 'end', iid=str(idx), values=(name, base_price))
+
+    def clear():
+        amountEntry.delete(0, tk.END)
+        rTypeEntry.config(state="normal")
+        rTypeEntry.delete(0, tk.END)
+        rTypeEntry.config(state="readonly")
+        selected_index[0] = None  # Reset selection on clear
+
+    def on_select(e):
+        selected = tree.focus()
+        if selected:
+            selected_index[0] = int(selected)
+            values = tree.item(selected, 'values')
+
+            name = values[0]
+            amount = values[1]
+            print(name)
+            print(amount)
+
+            rTypeEntry.config(state="normal")
+            rTypeEntry.delete(0, tk.END)
+            rTypeEntry.insert(0, name)
+            rTypeEntry.config(state="readonly")
+
+            amountEntry.delete(0, tk.END)
+            amountEntry.insert(0, amount)
+
+        else:
+            selected_index[0] = None
+
+
+
+    def update():
+        if selected_index[0] is None:
+            messagebox.showinfo("Select", "Select an entry to update.")
+            return
+
+        strAmount = amountEntry.get().strip()
+        if not strAmount:
+            messagebox.showwarning("Missing", "Amount is required.")
+            return
+
+        try:
+            new_amount = float(strAmount)
+        except ValueError:
+            messagebox.showerror("Invalid", "Amount must be a number.")
+            return
+
+        data = logic.read_all()
+        index = selected_index[0]
+
+        if index < len(data):
+            if float(data[index]['base_price']) == new_amount:
+                messagebox.showinfo("No changes", "The amount is the same as before.")
+                return
+
+            name = data[index]['name']
+            success, msg = logic.update(index, name, new_amount)
+            if success:
+                refresh()
+                clear()
+            else:
+                messagebox.showerror("Error", msg)
+
+
+
+
+
+
     # Note:
     # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
     # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
@@ -1823,6 +2004,7 @@ def modelPricing():
                           , text="Update"
                           , width=20
                           , pady=10
+                          , command = update
                           )
     btnUpdate.grid(row=1, column=2, pady=(20, 0), padx=(20, 0))
 
@@ -1865,106 +2047,8 @@ def modelPricing():
 
     # Pack
     tree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
-
-    # ======================= ROOM INFO ===============================
-
-    roomInfo = tk.LabelFrame(mainBookingFrame
-                             , text="Discount Rules"
-                             , padx=20
-                             , pady=20
-                             , bg="white"
-                             , font=tkFont.Font(family="Arial"
-                                                , size=12
-                                                , weight="bold"
-                                                )
-                             )
-    roomInfo.pack(padx=20
-                  , pady=20
-                  , anchor="nw"
-                  )
-
-    rNumber = tk.Label(roomInfo
-                       , text="Discount Condition:"
-                       , bg="white"
-                       , anchor="w"
-                       )
-    rNumber.grid(row=0, column=1, padx=(0, 10))
-    rNumberEntry = tk.Entry(roomInfo
-                            , bg="white"
-                            , width=25
-                            )
-    rNumberEntry.grid(row=0, column=2)
-
-    rInfo = tk.Label(roomInfo
-                     , text="Discount Percentage:"
-                     , bg="white"
-                     )
-    rInfo.grid(row=0, column=3, padx=(20, 10))
-    rInfoEntry = tk.Entry(roomInfo
-                          , bg="white"
-                          , width=25
-                          )
-    rInfoEntry.grid(row=0, column=4)
-
-    btnCreateDisc = tk.Button(roomInfo
-                          , text="Create"
-                          , width=20
-                          , pady=10
-                          )
-    btnCreateDisc.grid(row=1, column=2, pady=(20, 0), padx=(0, 0))
-
-    btnUpdateDisc = tk.Button(roomInfo
-                              , text="Update"
-                              , width=20
-                              , pady=10
-                              )
-    btnUpdateDisc.grid(row=1, column=3, pady=(20, 0), padx=(20, 0))
-
-    btnDeleteDisc = tk.Button(roomInfo
-                              , text="Delete"
-                              , width=20
-                              , pady=10
-                              )
-    btnDeleteDisc.grid(row=1, column=4, pady=(20, 0), padx=(20, 0))
-
-    treeRoomContainer = tk.Frame(mainBookingFrame
-                                 , width=1000
-                                 , height=400
-                                 , bg="white"
-                                 )
-    treeRoomContainer.pack(padx=(13, 0), pady=5)
-    treeRoomContainer.pack_propagate(False)
-
-    # Treeview Widget
-    treeRoom = ttk.Treeview(treeRoomContainer, show="headings", height=17)
-
-    # Columns
-    treeRoom['columns'] = ("DiscountCondition"
-                           , "DiscountPercent"
-                           )
-
-    # Formatting Columns
-    treeRoom.column("DiscountCondition"
-                    , anchor=tk.W
-                    , width=400
-                    )
-    treeRoom.column("DiscountPercent"
-                    , anchor=tk.W
-                    , width=400
-                    )
-
-    # Create Headings
-    treeRoom.heading("DiscountCondition"
-                     , text="Discount Condition"
-                     , anchor=tk.W
-                     )
-    treeRoom.heading("DiscountPercent"
-                     , text="Discount Percent"
-                     , anchor=tk.W
-                     )
-
-    # Pack
-    treeRoom.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
+    tree.bind("<<TreeviewSelect>>", on_select)
+    refresh()
 
 
     return frame
