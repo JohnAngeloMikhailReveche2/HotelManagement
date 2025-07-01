@@ -7,7 +7,4 @@ CREATE TABLE STAFF (
     , Password VARCHAR(100) NOT NULL
     , IsDeleted BOOL NOT NULL 
     , Role VARCHAR(40) NOT NULL
-    , Staff_ID INTEGER NULL   
-    , FOREIGN KEY(Staff_ID)
-        REFERENCES STAFF(StaffID)
 );

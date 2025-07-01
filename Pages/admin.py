@@ -1725,7 +1725,6 @@ def modelRoomCreate():
                 return item['base_price']
         return None  # or some default value if not found
 
-
     def createRoomRecord(capacityValue):
         selectRoomNumber = rNumberEntry.get().strip()
         selectBedType = btEntry.get().strip()
@@ -1833,6 +1832,7 @@ def modelRoomCreate():
     def on_deselect():
         # Clear Treeview selection
         treeRoom.selection_remove(treeRoom.selection())
+        treeRoom.focus("")
         # Clear Room Fields
         clearCreateRoomFields()
         # Enable Create button
@@ -1981,8 +1981,39 @@ def modelPricing():
     # The Json CRUD Functionality
     logic = RoomTypeService()
 
-    # Methods
 
+    # SQL METHODS
+    def refreshRoomPricing(basePrice, roomType):
+        try:
+            # Get the absolute path of this script file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Build the path to the database file
+            db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+            # Normalize the path (handle ../ correctly)
+            db_path = os.path.normpath(db_path)
+
+            conn = sqlite3.connect(db_path)
+
+            cursor = conn.cursor()
+
+            createGuest = """
+                    UPDATE ROOM
+                    SET Base_Price = ?
+                    WHERE RoomType = ?
+            """
+            cursor.execute(createGuest, (basePrice, roomType))
+            conn.commit()
+
+            cursor.close()
+            conn.close()
+
+        except Exception as e:
+            print("Error connecting to database:", e)
+            return None
+
+
+
+    # Methods
     selected_index = [None]  # Mutable container for selected index
 
     def refresh():
@@ -1992,6 +2023,7 @@ def modelPricing():
         for idx, room in enumerate(logic.read_all()):
             name = room["name"]
             base_price = room["base_price"]
+            refreshRoomPricing(base_price, name)
             tree.insert('', 'end', iid=str(idx), values=(name, base_price))
 
     def clear():
@@ -2023,8 +2055,6 @@ def modelPricing():
         else:
             selected_index[0] = None
 
-
-
     def update():
         if selected_index[0] is None:
             messagebox.showinfo("Select", "Select an entry to update.")
@@ -2051,15 +2081,12 @@ def modelPricing():
 
             name = data[index]['name']
             success, msg = logic.update(index, name, new_amount)
+
             if success:
                 refresh()
                 clear()
             else:
                 messagebox.showerror("Error", msg)
-
-
-
-
 
 
     # Note:
@@ -2493,6 +2520,15 @@ def modelStaffFrame():
         btnCreateStaff.config(state="normal")
 
 
+    def deselectField():
+        tree.selection_remove(tree.selection())
+        tree.focus("")
+        fNameEntry.delete(0, tk.END)
+        mNameEntry.delete(0, tk.END)
+        lNameEntry.delete(0, tk.END)
+        userNameEntry.delete(0, tk.END)
+        passwordEntry.delete(0, tk.END)
+        btnCreateStaff.config(state="normal")
 
 
     # -- METHODS --
@@ -2522,6 +2558,14 @@ def modelStaffFrame():
                           , command=softDeleteRecord
                           )
     btnDeleteStaff.grid(row=2, column=6, pady=(20, 0), padx=(20, 0))
+
+    btnDeselectStaff = tk.Button(roomTypeInfo
+                               , text="Deselect"
+                               , width=20
+                               , pady=10
+                               , command=deselectField
+                               )
+    btnDeselectStaff.grid(row=3, column=6, pady=(20, 0), padx=(20, 0))
 
     treeContainer = tk.Frame(mainBookingFrame
                              , width=1000

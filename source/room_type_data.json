@@ -1,11 +1,11 @@
 [
     {
         "name": "asd",
-        "base_price": 100.0
+        "base_price": 200.0
     },
     {
         "name": "RoomType6",
-        "base_price": 200.0
+        "base_price": 300.0
     },
     {
         "name": "roomType1001",

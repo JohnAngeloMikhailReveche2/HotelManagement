@@ -5,7 +5,6 @@ from tkinter import ttk
 import tkinter.font as tkFont
 from tkcalendar import DateEntry
 
-from Pages.dashboard import DASHBOARD_FRAME
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
