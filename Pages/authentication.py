@@ -33,6 +33,11 @@ COLUMN_WIDTH = 100
 def show_auth_window():
     authRoot.deiconify()
 
+def open_admin_dashboard():
+    authRoot.withdraw()
+    from admin import open_dashboard
+    open_dashboard(show_auth_window)
+
 def open_dashboard_and_exit():
     authRoot.withdraw()
     from dashboard import open_dashboard
@@ -54,7 +59,12 @@ def authenticate(username, password):
             json.dump(userData, f)
 
         print("Logged in user data:", user)
-        open_dashboard_and_exit()
+
+        if user[7] == "Admin":
+            open_admin_dashboard()
+        else:
+            open_dashboard_and_exit()
+
 
 
 
