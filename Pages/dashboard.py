@@ -1485,6 +1485,17 @@ def open_dashboard(on_logout_callback):
 
         loadBookings(treeBookingInManage)
 
+        def openDetailWindow(e):
+            selectedItem = treeBookingInManage.focus()
+            if not selectedItem:
+                return
+            rowData = treeBookingInManage.item(selectedItem, 'values')
+            from modify import openDetailWindow
+            openDetailWindow(rowData)
+
+        treeBookingInManage.bind("<Double-1>", openDetailWindow)
+
+
         return frame
 
     def modelHistoryFrame():
