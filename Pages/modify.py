@@ -40,6 +40,7 @@ checkOutGlobal = datetime.now()
 
 def openDetailWindow(rowData):
     root = tk.Toplevel
+    record = rowData
 
     def centerScreen():
         # Screen Dimension
@@ -61,17 +62,6 @@ def openDetailWindow(rowData):
                             , width=windowWidth
                             )
         topFrame.pack_propagate(False)
-
-        btnBack = tk.Button(topFrame
-                            , text="Back"
-                            , padx=30
-                            , pady=10
-                            )
-        btnBack.pack(pady=(20, 0)
-                     , padx=(15, 0)
-                     , anchor="w"
-                     , side="left"
-                     )
 
         lblTitle = tk.Label(topFrame
                             , text="Manage"
@@ -95,47 +85,18 @@ def openDetailWindow(rowData):
         logic = RoomTypeService()
         idLogic = IDService()
 
-        # Combobox Event for Pricing and Check In and Out DateTime
-        def update_booking_info(e=None):
-            global checkInGlobal
-            global checkOutGlobal
+        def validateBookingFields():
+            if not fNameEntry.get() or not lNameEntry.get() or not phoneNumEntry.get() or not streetEntry.get() or not barangayEntry.get() or not cityEntry.get() or not zipEntry.get() or not selectedProofCmb.get() or not idNumEntry.get():
+                messagebox.showerror("Validation Error", "Please fill in all fields.")
+                return
 
-            try:
-                hours = int(hour_cb.get())
-                minutes = int(minute_cb.get())
+            if not phoneNumEntry.get().isdigit():
+                messagebox.showerror("Invalid Input", "Phone number must contain digits only.")
+                return
 
-                # Time Calculation
-                checkinTime = datetime.now()
-                checkoutTime = checkinTime + timedelta(hours=hours, minutes=minutes)
-                totalTimeHours = hours + (minutes / 60)
 
-                # Price Calculation
-                total = totalTimeHours * pricePerHour
 
-                # Set Values
-                checkInLabel.config(text=checkinTime.strftime("%Y-%m-%d %I:%M %p"))
-                checkOutLabel.config(text=checkoutTime.strftime("%Y-%m-%d %I:%M %p"))
-                checkInGlobal = checkinTime
-                checkOutGlobal = checkoutTime
-
-                totalPriceEntry.config(state="normal")
-                totalPriceEntry.delete(0, tk.END)
-                totalPriceEntry.insert(0, f"{total}")
-                totalPriceEntry.config(state="readonly")
-
-                timePriceEntry.config(state="normal")
-                timePriceEntry.delete(0, tk.END)
-                timePriceEntry.insert(0, f"{total}")
-                timePriceEntry.config(state="readonly")
-
-                roomPriceEntry.config(state="normal")
-                roomPriceEntry.delete(0, tk.END)
-                roomPriceEntry.insert(0, f"{pricePerHour}")
-                roomPriceEntry.config(state="readonly")
-
-            except ValueError:
-                pass
-
+            update_booking()
 
         frame = tk.Frame(canvas
                          , bg="white"
@@ -220,6 +181,7 @@ def openDetailWindow(rowData):
                               , width=25
                               )
         fNameEntry.grid(row=0, column=2)
+        fNameEntry.insert(0, rowData[1])
 
         mName = tk.Label(personalInfoGroupBox
                          , text="Middle Name:"
@@ -231,6 +193,7 @@ def openDetailWindow(rowData):
                               , width=25
                               )
         mNameEntry.grid(row=0, column=4)
+        mNameEntry.insert(0, rowData[2])
 
         lName = tk.Label(personalInfoGroupBox
                          , text="Last Name:"
@@ -242,6 +205,7 @@ def openDetailWindow(rowData):
                               , width=25
                               )
         lNameEntry.grid(row=0, column=6)
+        lNameEntry.insert(0, rowData[3])
 
         phoneNum = tk.Label(personalInfoGroupBox
                             , text="Phone Number:"
@@ -253,6 +217,7 @@ def openDetailWindow(rowData):
                                  , width=25
                                  )
         phoneNumEntry.grid(row=1, column=2, pady=(20, 0))
+        phoneNumEntry.insert(0, rowData[4])
 
         gender = tk.Label(personalInfoGroupBox
                           , text="Gender:"
@@ -269,6 +234,7 @@ def openDetailWindow(rowData):
                                )
         genderCmb.grid(row=1, column=6, padx=(7, 10), pady=(20, 0))
         genderCmb.current(0)
+        genderCmb.set(rowData[5])
 
         # ======================= ADDRESS INFORMATION ===============================
 
@@ -297,6 +263,7 @@ def openDetailWindow(rowData):
                                , width=25
                                )
         streetEntry.grid(row=0, column=2)
+        streetEntry.insert(0, rowData[6])
 
         barangay = tk.Label(addressInfoGroupBox
                             , text="Barangay:"
@@ -308,6 +275,7 @@ def openDetailWindow(rowData):
                                  , width=25
                                  )
         barangayEntry.grid(row=0, column=4)
+        barangayEntry.insert(0, rowData[7])
 
         city = tk.Label(addressInfoGroupBox
                         , text="City:"
@@ -319,6 +287,7 @@ def openDetailWindow(rowData):
                              , width=25
                              )
         cityEntry.grid(row=0, column=6)
+        cityEntry.insert(0, rowData[8])
 
         zip = tk.Label(addressInfoGroupBox
                        , text="Zip:"
@@ -330,6 +299,7 @@ def openDetailWindow(rowData):
                             , width=25
                             )
         zipEntry.grid(row=1, column=6, pady=(20, 0))
+        zipEntry.insert(0, rowData[9])
 
         # ======================= PROOF OF IDENTITY ===============================
 
@@ -358,6 +328,7 @@ def openDetailWindow(rowData):
                                         , width=30
                                         )
         selectedProofCmb.grid(row=0, column=2, padx=(0, 10))
+        selectedProofCmb.set(rowData[10])
 
         # Method of fetching ID from the id_data.json
         def idTypeCmbRefresh():
@@ -378,213 +349,7 @@ def openDetailWindow(rowData):
                               , width=25
                               )
         idNumEntry.grid(row=0, column=4)
-
-        # ======================= BOOKING / ROOM ===============================
-
-        def loadRoomsForComboSQL(roomType):
-            try:
-                # Get the absolute path of this script file
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                # Build the path to the database file
-                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
-                # Normalize the path (handle ../ correctly)
-                db_path = os.path.normpath(db_path)
-
-                conn = sqlite3.connect(db_path)
-
-                cursor = conn.cursor()
-
-                loadRooms = """
-                            SELECT RoomID, RoomNumber, Base_Price FROM ROOM
-                            WHERE RoomType = ? AND Status = "Available"
-                            LIMIT 1
-                        """
-                cursor.execute(loadRooms, (roomType,))
-                room = cursor.fetchone()
-
-                cursor.close()
-                conn.close()
-
-                return room
-
-            except Exception as e:
-                print("Error connecting to database:", e)
-                return None
-
-        def onRoomTypeSelected(e):
-            global roomNumber
-            global pricePerHour
-
-            selectedRType = roomTypeCmb.get()
-            room = loadRoomsForComboSQL(selectedRType)
-
-            if room:
-
-                roomNoEntry.config(state="normal")
-                roomNoEntry.delete(0, tk.END)
-                roomNoEntry.insert(0, room[1])
-                roomNoEntry.config(state="readonly")
-
-                roomIDMap[room[1]] = room[0]
-                roomNumber = room[1]
-                pricePerHour = room[2]
-            else:
-                roomNoEntry.config(state="normal")
-                roomNoEntry.delete(0, tk.END)
-                roomNoEntry.config(state="readonly")
-
-        bookingGroupBox = tk.LabelFrame(mainFrame
-                                        , text="Room"
-                                        , padx=20
-                                        , pady=20
-                                        , bg="white"
-                                        , font=tkFont.Font(family="Arial"
-                                                           , size=12
-                                                           , weight="bold"
-                                                           )
-                                        )
-        bookingGroupBox.pack(padx=20
-                             , pady=(0, 20)
-                             , anchor="w"
-                             )
-
-        selectedRoomType = StringVar()
-        roomType = tk.Label(bookingGroupBox
-                            , text="Room Type:"
-                            , bg="white"
-                            )
-        roomType.grid(row=0, column=1, padx=(0, 10))
-        roomTypeCmb = ttk.Combobox(bookingGroupBox
-                                   , textvariable=selectedRoomType
-                                   , state="readonly"
-                                   , width=20
-                                   )
-        roomTypeCmb.bind("<<ComboboxSelected>>", onRoomTypeSelected)
-        roomTypeCmb.grid(row=0, column=2)
-
-        def roomTypeCmbRefresh():
-            # Combo Box Initialization
-            roomTypeData = logic.read_all()
-            roomTypes = [item['name'] for item in roomTypeData]
-            roomTypeCmb['values'] = roomTypes
-
-        roomTypeCmbRefresh()
-
-        roomNo = tk.Label(bookingGroupBox
-                          , text="Room Number:"
-                          , bg="white"
-                          )
-        roomNo.grid(row=0, column=5, padx=(20, 10))
-        roomNoEntry = ttk.Entry(bookingGroupBox
-                                , state="readonly"
-                                , width=15
-                                )
-        roomNoEntry.grid(row=0, column=6)
-
-        # ======================= CHECK IN AND OUT ===============================
-
-        checkGroupBox = tk.LabelFrame(mainFrame
-                                      , text="Check In and Check Out"
-                                      , padx=20
-                                      , pady=20
-                                      , bg="white"
-                                      , font=tkFont.Font(family="Arial"
-                                                         , size=12
-                                                         , weight="bold"
-                                                         )
-                                      )
-        checkGroupBox.pack(padx=20
-                           , pady=(0, 20)
-                           , anchor="w"
-                           )
-
-        lbl1 = tk.Label(checkGroupBox
-                        , text="Select Duration:"
-                        , bg="white"
-                        )
-        lbl1.grid(row=0, column=1)
-
-        lbl2 = tk.Label(checkGroupBox
-                        , text="Hour:"
-                        , bg="white"
-                        )
-        lbl2.grid(row=1, column=1, pady=(10, 0))
-        hour_cb = ttk.Combobox(checkGroupBox, values=list(range(1, 25)), state="readonly", width=5)
-        hour_cb.grid(row=1, column=2, pady=(10, 0))
-        lbl3 = tk.Label(checkGroupBox
-                        , text="Minutes:"
-                        , bg="white"
-                        )
-        lbl3.grid(row=1, column=3, pady=(10, 0), padx=(10, 0))
-        minute_cb = ttk.Combobox(checkGroupBox, values=[0, 15, 30, 45], state="readonly", width=5)
-        minute_cb.grid(row=1, column=4, pady=(10, 0), padx=(10, 0))
-
-        hour_cb.bind("<<ComboboxSelected>>", update_booking_info)
-        minute_cb.bind("<<ComboboxSelected>>", update_booking_info)
-
-        tk.Label(checkGroupBox, text="Check-In Time:", bg="white").grid(row=2, column=1, pady=(10, 0), padx=(10, 0))
-        checkInLabel = tk.Label(checkGroupBox, bg="white")
-        checkInLabel.grid(row=2, column=2, pady=(10, 0), padx=(10, 0))
-
-        tk.Label(checkGroupBox, text="Check-Out Time:", bg="white").grid(row=3, column=1, pady=(10, 0), padx=(10, 0))
-        checkOutLabel = tk.Label(checkGroupBox, bg="white")
-        checkOutLabel.grid(row=3, column=2, pady=(10, 0), padx=(10, 0))
-
-        # ======================= PRICING ===============================
-
-        pricingGroupBox = tk.LabelFrame(mainFrame
-                                        , text="Pricing"
-                                        , padx=20
-                                        , pady=20
-                                        , bg="white"
-                                        , font=tkFont.Font(family="Arial"
-                                                           , size=12
-                                                           , weight="bold"
-                                                           )
-                                        )
-        pricingGroupBox.pack(padx=20
-                             , pady=(0, 20)
-                             , anchor="w"
-                             )
-
-        roomPrice = tk.Label(pricingGroupBox
-                             , text="Room Base Price: ₱"
-                             , bg="white"
-                             )
-        roomPrice.grid(row=0, column=1, padx=(0, 10))
-        roomPriceEntry = tk.Entry(pricingGroupBox
-                                  , bg="white"
-                                  , width=25
-                                  , state="readonly"
-                                  , justify="right"
-                                  )
-        roomPriceEntry.grid(row=0, column=2)
-
-        timePrice = tk.Label(pricingGroupBox
-                             , text="Duration (Per Hour/Minute) Subtotal Price: ₱"
-                             , bg="white"
-                             )
-        timePrice.grid(row=2, column=1, padx=(0, 10), pady=(15, 0))
-        timePriceEntry = tk.Entry(pricingGroupBox
-                                  , bg="white"
-                                  , width=25
-                                  , state="readonly"
-                                  , justify="right"
-                                  )
-        timePriceEntry.grid(row=2, column=2, pady=(15, 0))
-
-        totalPrice = tk.Label(pricingGroupBox
-                              , text="Total Price: ₱"
-                              , bg="white"
-                              )
-        totalPrice.grid(row=3, column=1, padx=(0, 10), pady=(15, 0))
-        totalPriceEntry = tk.Entry(pricingGroupBox
-                                   , bg="white"
-                                   , width=25
-                                   , state="readonly"
-                                   , justify="right"
-                                   )
-        totalPriceEntry.grid(row=3, column=2, pady=(15, 0))
+        idNumEntry.insert(0, rowData[11])
 
         # ======================= CHECK IN BUTTON ===============================
 
@@ -592,6 +357,7 @@ def openDetailWindow(rowData):
                               , text="Update"
                               , pady=10
                               , padx=10
+                              , command = validateBookingFields
                               )
         updateBtn.pack(anchor="w"
                        , padx=(20, 0)
@@ -599,16 +365,53 @@ def openDetailWindow(rowData):
                        , side="left"
                        )
 
-        deleteBtn = tk.Button(mainFrame
-                              , text="Delete"
-                              , pady=10
-                              , padx=10
-                              )
-        deleteBtn.pack(anchor="w"
-                       , padx=(20, 0)
-                       , pady=(0, 100)
-                       , side="left"
-                       )
+        def update_booking():
+            try:
+                # Get all input values
+                bookingID = rowData[0]  # Assuming rowData[0] is BookingID
+                firstName = fNameEntry.get()
+                middleName = mNameEntry.get()
+                lastName = lNameEntry.get()
+                phoneNumber = phoneNumEntry.get()
+                gender = genderCmb.get()
+                streetVal = streetEntry.get()
+                barangayVal = barangayEntry.get()
+                cityVal = cityEntry.get()
+                zipVal = zipEntry.get()
+                idType = selectedProofCmb.get()
+                idNumber = idNumEntry.get()
+
+                # DB path
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                db_path = os.path.normpath(os.path.join(script_dir, '..', 'Database', 'hotelManagement.db'))
+
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+
+                # --- 1. Update GUEST Table ---
+                cursor.execute("""
+                    UPDATE GUEST
+                    SET FName = ?, MName = ?, LName = ?, PhoneNumber = ?, Gender = ?,
+                        Street = ?, Barangay = ?, City = ?, Zip = ?,
+                        Proof_ID_Type = ?, Proof_ID_Number = ?
+                    WHERE GuestID = (
+                        SELECT GuestID FROM BOOKING WHERE BookingID = ?
+                    )
+                """, (
+                    firstName, middleName, lastName, phoneNumber, gender,
+                    streetVal, barangayVal, cityVal, zipVal,
+                    idType, idNumber,
+                    bookingID
+                ))
+
+                conn.commit()
+                conn.close()
+
+                messagebox.showinfo("Success", "Guest booking information updated successfully!")
+
+            except Exception as e:
+                print("Error updating booking:", e)
+                messagebox.showerror("Error", f"Failed to update booking.\n{e}")
 
         return frame
 

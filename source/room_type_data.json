@@ -1,14 +1,18 @@
 [
     {
-        "name": "asd",
+        "name": "Single Room",
+        "base_price": 100.0
+    },
+    {
+        "name": "Double",
         "base_price": 200.0
     },
     {
-        "name": "RoomType6",
-        "base_price": 300.0
+        "name": "Twin",
+        "base_price": 4000.0
     },
     {
-        "name": "roomType1001",
+        "name": "deluxe",
         "base_price": 0.0
     }
 ]

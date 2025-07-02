@@ -1,18 +1,11 @@
-
-
 # NOTE: MAKE SURE YOU INSTALLED THE PIL PACKAGE!
 import tkinter as tk
-from tkinter import ttk, StringVar
+from tkinter import ttk
 import tkinter.font as tkFont
-import json
-
 # NOTE: MAKE SURE YOU INSTALLED THE PIL PACKAGE!
 from PIL import Image, ImageTk, ImageEnhance
 import os
-import subprocess
-import sys
 
-from Classes.auth.authenticate import Authenticator
 
 
 
@@ -29,46 +22,7 @@ COLUMN_WIDTH = 100
 
 
 
-
-def show_auth_window():
-    authRoot.deiconify()
-
-def open_admin_dashboard():
-    authRoot.withdraw()
-    from admin import open_dashboard
-    open_dashboard(show_auth_window)
-
-def open_dashboard_and_exit():
-    authRoot.withdraw()
-    from dashboard import open_dashboard
-    open_dashboard(show_auth_window)
-
-def authenticate(username, password):
-    auth = Authenticator(username, password)
-
-
-    success, user = auth.authenticate()
-
-    if success:
-
-        userData = {
-            "id": user[0],
-            "username": user[1]
-        }
-
-        with open("userData.json", "w") as f:
-            json.dump(userData, f)
-
-        print("Logged in user data:", user)
-
-        if user[7] == "Admin":
-            open_admin_dashboard()
-        else:
-            open_dashboard_and_exit()
-
-
-
-
+# METHODS
 
 def centerScreen():
     # Screen Dimension
@@ -83,17 +37,6 @@ def centerScreen():
     authRoot.geometry(f"{windowWidth}x{windowHeight}+{centerX}+{centerY}")
 
 def modelAuthDashboardFrame():
-
-    def validateAuth():
-        cachedUsername = username.get().strip()
-        cachedPassword = password.get().strip()
-        usernameEntry.delete(0, tk.END)
-        passwordEntry.delete(0, tk.END)
-        authenticate(cachedUsername, cachedPassword)
-
-    # VARIABLES
-    username = StringVar()
-    password = StringVar()
 
     # Button Initialization
     dashboardFrame = tk.Frame(authCanvas
@@ -125,16 +68,16 @@ def modelAuthDashboardFrame():
     logoLabel.pack(anchor="nw")
 
     # ======================= EMAIL ===============================
-    usernameFrame = tk.Frame(dashboardFrame
+    emailFrame = tk.Frame(dashboardFrame
                            , bg=DASHBOARD_FRAME_COLOR
                            , height=50
                            , width=230
                            )
-    usernameFrame.pack_propagate(False)
-    usernameFrame.pack(pady=(90, 0)
+    emailFrame.pack_propagate(False)
+    emailFrame.pack(pady=(90, 0)
                      )
-    usernameLabel = tk.Label(usernameFrame
-                          , text="Username:"
+    emailLabel = tk.Label(emailFrame
+                          , text="Email:"
                           , fg="white"
                           , bg=DASHBOARD_FRAME_COLOR
                           , font=tkFont.Font(family="Arial"
@@ -142,15 +85,14 @@ def modelAuthDashboardFrame():
                                              , weight="bold"
                                              )
                           )
-    usernameLabel.pack(anchor="nw")
-    usernameEntry = tk.Entry(usernameFrame
+    emailLabel.pack(anchor="nw")
+    emailEntry = tk.Entry(emailFrame
                           , width=25
-                          , textvariable=username
                           , font=tkFont.Font(family="Arial"
                                              , size=12
                                              )
                           )
-    usernameEntry.pack(anchor="n")
+    emailEntry.pack(anchor="n")
 
     # ======================= PASSWORD ===============================
 
@@ -174,8 +116,6 @@ def modelAuthDashboardFrame():
     passwordLabel.pack(anchor="nw")
     passwordEntry = tk.Entry(passwordFrame
                           , width=25
-                          , textvariable=password
-                          , show="*"
                           , font=tkFont.Font(family="Arial"
                                              , size=12
                                              )
@@ -208,7 +148,6 @@ def modelAuthDashboardFrame():
                                             , size=12
                                             , weight="bold"
                                             )
-                         , command=validateAuth
                          )
     btnLogIn.pack(anchor="n")
 
@@ -310,6 +249,8 @@ authRoot.title("Hotel Management")
 authRoot.update_idletasks()
 centerScreen()
 authRoot.resizable(False, False)
+
+
 
 # Canvas Definition
 authCanvas = tk.Canvas(authRoot

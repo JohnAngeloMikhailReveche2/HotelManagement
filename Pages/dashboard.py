@@ -163,7 +163,9 @@ def open_dashboard(on_logout_callback):
 
             loadBookingsSQL = """
                     SELECT 
-                        GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || Guest.LName AS GuestFullName
+                        BOOKING.BookingID
+                        , ROOM.RoomID
+                        , GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || Guest.LName AS GuestFullName
                         , GUEST.PhoneNumber
                         , GUEST.Street || ', ' || COALESCE(GUEST.Barangay || ', ', '') || COALESCE(GUEST.Zip || ', ', '') || GUEST.City AS GuestFullAddress
                         , GUEST.Proof_ID_Type
@@ -171,7 +173,7 @@ def open_dashboard(on_logout_callback):
                         , ROOM.RoomNumber
                         , BOOKING.CheckInDT
                         , BOOKING.CheckOutDT
-                        
+                         
                         -- Calculate Total Price
                         , ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
 
@@ -179,7 +181,8 @@ def open_dashboard(on_logout_callback):
                     FROM BOOKING
                     INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
                     INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
-                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID 
+                    WHERE BOOKING.IsDeleted = 0
             """
             cursor.execute(loadBookingsSQL)
             rows = cursor.fetchall()
@@ -189,7 +192,6 @@ def open_dashboard(on_logout_callback):
                 tree.delete(row)
 
             for row in rows:
-                print(row)
                 tree.insert("", tk.END, values=row)
 
             cursor.close()
@@ -199,9 +201,57 @@ def open_dashboard(on_logout_callback):
             print("Error connecting to database:", e)
             return None
 
+    def loadHistory(tree):
+        try:
+            # Get the absolute path of this script file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Build the path to the database file
+            db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+            # Normalize the path (handle ../ correctly)
+            db_path = os.path.normpath(db_path)
+
+            conn = sqlite3.connect(db_path)
+
+            cursor = conn.cursor()
+
+            loadBookingsSQL = """
+                    SELECT
+                        BOOKING.BookingID 
+                        , GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || Guest.LName AS GuestFullName
+                        , GUEST.PhoneNumber
+                        , GUEST.Street || ', ' || COALESCE(GUEST.Barangay || ', ', '') || COALESCE(GUEST.Zip || ', ', '') || GUEST.City AS GuestFullAddress
+                        , GUEST.Proof_ID_Type
+                        , ROOM.RoomType
+                        , ROOM.RoomNumber
+                        , BOOKING.CheckInDT
+                        , BOOKING.CheckOutDT
+
+                        -- Calculate Total Price
+                        , ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
 
 
+                    FROM BOOKING
+                    INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
+                    INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
+                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+                    WHERE BOOKING.IsDeleted = 1
+            """
+            cursor.execute(loadBookingsSQL)
+            rows = cursor.fetchall()
 
+            # Clear Previous Data
+            for row in tree.get_children():
+                tree.delete(row)
+
+            for row in rows:
+                tree.insert("", tk.END, values=row)
+
+            cursor.close()
+            conn.close()
+
+        except Exception as e:
+            print("Error connecting to database:", e)
+            return None
 
 
 
@@ -621,6 +671,10 @@ def open_dashboard(on_logout_callback):
         def validateBookingFields():
             if not fNameEntry.get() or not lNameEntry.get() or not phoneNumEntry.get() or not streetEntry.get() or not barangayEntry.get() or not cityEntry.get() or not zipEntry.get() or not selectedProofCmb.get() or not idNumEntry.get() or not roomTypeCmb.get() or not roomNoEntry.get() or not hour_cb.get() or not minute_cb.get():
                 messagebox.showerror("Validation Error", "Please fill in all fields.")
+                return
+
+            if not phoneNumEntry.get().isdigit():
+                messagebox.showerror("Invalid Input", "Phone number must contain digits only.")
                 return
 
             checkInBooking()
@@ -1208,19 +1262,29 @@ def open_dashboard(on_logout_callback):
                 # Base query
                 query = """
                         SELECT 
-                            GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || GUEST.LName AS GuestFullName,
+                            GUEST.GuestID,
+                            GUEST.FName,
+                            GUEST.MName,
+                            GUEST.LName,
                             GUEST.PhoneNumber,
-                            GUEST.Street || ', ' || COALESCE(GUEST.Barangay || ', ', '') || COALESCE(GUEST.Zip || ', ', '') || GUEST.City AS GuestFullAddress,
+                            GUEST.Gender,
+                            GUEST.Street,
+                            GUEST.Barangay,
+                            GUEST.City,
+                            GUEST.Zip,
                             GUEST.Proof_ID_Type,
+                            GUEST.Proof_ID_Number,
                             ROOM.RoomType,
                             ROOM.RoomNumber,
                             BOOKING.CheckInDT,
                             BOOKING.CheckOutDT,
+                            ROUND((julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS Hour,
                             ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
                         FROM BOOKING
                         INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
                         INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
                         INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+                        WHERE BOOKING.IsDeleted = 0
                     """
 
 
@@ -1366,13 +1430,6 @@ def open_dashboard(on_logout_callback):
                               )
         btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
-        btnDelete = tk.Button(btnFrame
-                              , text="Delete"
-                              , pady=5
-                              , padx=40
-                              )
-        btnDelete.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
-
         treeContainer = tk.Frame(mainFrame
                                  , width=1000
                                  , height=400
@@ -1385,92 +1442,174 @@ def open_dashboard(on_logout_callback):
         treeBookingInManage = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
-        treeBookingInManage['columns'] = ("Name"
-                           , "Contact"
-                           , "Address"
-                           , "ID Proof"
-                           , "Room Type"
-                           , "Room Number"
-                           , "Check-In"
-                           , "Check-Out"
-                           , "Total Price"
+        treeBookingInManage['columns'] = ("GuestID"
+                           , "FName"
+                           , "MName"
+                           , "LName"
+                           , "PhoneNumber"
+                           , "Gender"
+                           , "Street"
+                           , "Barangay"
+                           , "City"
+                                          , "Zip"
+                                          , "Proof_ID_Type"
+                                          , "Proof_ID_Number"
+                                          , "RoomType"
+                                          , "RoomNumber"
+                                          , "CheckInDT"
+                                          , "CheckOutDT"
+                                          , "Hours"
+                                          , "TotalCost"
                            )
 
         # Formatting Columns
-        treeBookingInManage.column("Name"
+        treeBookingInManage.column("GuestID"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Contact"
+        treeBookingInManage.column("FName"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Address"
+        treeBookingInManage.column("MName"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("ID Proof"
+        treeBookingInManage.column("LName"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Room Type"
+        treeBookingInManage.column("PhoneNumber"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Room Number"
+        treeBookingInManage.column("Gender"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Check-In"
+        treeBookingInManage.column("Street"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Check-Out"
+        treeBookingInManage.column("Barangay"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        treeBookingInManage.column("Total Price"
+        treeBookingInManage.column("City"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
+        treeBookingInManage.column("Zip"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("Proof_ID_Type"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("Proof_ID_Number"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("RoomType"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("RoomNumber"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("CheckInDT"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("CheckOutDT"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("Hours"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
+        treeBookingInManage.column("TotalCost"
+                                   , anchor=tk.W
+                                   , width=COLUMN_WIDTH
+                                   )
 
         # Create Headings
-        treeBookingInManage.heading("Name"
-                     , text="Name"
+        treeBookingInManage.heading("GuestID"
+                     , text="Guest ID"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Contact"
-                     , text="Contact"
+        treeBookingInManage.heading("FName"
+                     , text="FName"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Address"
-                     , text="Address"
+        treeBookingInManage.heading("MName"
+                     , text="MName"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("ID Proof"
-                     , text="ID Proof"
+        treeBookingInManage.heading("LName"
+                     , text="LName"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Room Type"
-                     , text="Room Type"
+        treeBookingInManage.heading("PhoneNumber"
+                     , text="Phone Number"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Room Number"
+        treeBookingInManage.heading("Gender"
                      , text="Room Number"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Check-In"
-                     , text="Check-In"
+        treeBookingInManage.heading("Street"
+                     , text="Street"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Check-Out"
-                     , text="Check-Out"
+        treeBookingInManage.heading("Barangay"
+                     , text="Barangay"
                      , anchor=tk.W
                      )
-        treeBookingInManage.heading("Total Price"
-                     , text="Total Price"
+        treeBookingInManage.heading("City"
+                     , text="City"
                      , anchor=tk.W
                      )
+        treeBookingInManage.heading("Zip"
+                                    , text="Zip"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("Proof_ID_Type"
+                                    , text="Proof_ID_Type"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("Proof_ID_Number"
+                                    , text="Proof_ID_Number"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("RoomType"
+                                    , text="RoomType"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("RoomNumber"
+                                    , text="RoomNumber"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("CheckInDT"
+                                    , text="CheckIn Date Time"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("CheckOutDT"
+                                    , text="CheckOut Date Time"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("Hours"
+                                    , text="Hours"
+                                    , anchor=tk.W
+                                    )
+        treeBookingInManage.heading("TotalCost"
+                                    , text="TotalCost"
+                                    , anchor=tk.W
+                                    )
+
 
         # Horizontal Scrollbar
         scrollbar = ttk.Scrollbar(treeContainer
@@ -1483,8 +1622,6 @@ def open_dashboard(on_logout_callback):
         treeBookingInManage.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
         scrollbar.pack(side="bottom", fill="x")
 
-        loadBookings(treeBookingInManage)
-
         def openDetailWindow(e):
             selectedItem = treeBookingInManage.focus()
             if not selectedItem:
@@ -1495,12 +1632,89 @@ def open_dashboard(on_logout_callback):
 
         treeBookingInManage.bind("<Double-1>", openDetailWindow)
 
+        loadFilterBookings()
 
         return frame
 
     def modelHistoryFrame():
 
-        # Note:
+        def loadFilterHistory():
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                conn = sqlite3.connect(db_path)
+
+                cursor = conn.cursor()
+
+                filterValue = filterCmb.get()
+                searchTerm = searchEntry.get().strip()
+
+                column_map = {
+                    'Name': "GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || GUEST.LName",
+                    'Contact': 'GUEST.PhoneNumber',
+                    'ID Proof': 'GUEST.Proof_ID_Type',
+                    'Room Type': 'ROOM.RoomType',
+                    'Room Number': 'ROOM.RoomNumber',
+                    'Check-In': 'BOOKING.CheckInDT',
+                    'Check-Out': 'BOOKING.CheckOutDT'
+                }
+
+                # Base query
+                query = """
+                    SELECT
+                        BOOKING.BookingID 
+                        , GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || Guest.LName AS GuestFullName
+                        , GUEST.PhoneNumber
+                        , GUEST.Street || ', ' || COALESCE(GUEST.Barangay || ', ', '') || COALESCE(GUEST.Zip || ', ', '') || GUEST.City AS GuestFullAddress
+                        , GUEST.Proof_ID_Type
+                        , ROOM.RoomType
+                        , ROOM.RoomNumber
+                        , BOOKING.CheckInDT
+                        , BOOKING.CheckOutDT
+
+                        -- Calculate Total Price
+                        , ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
+
+
+                    FROM BOOKING
+                    INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
+                    INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
+                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+   
+                    """
+
+
+                params = []
+
+                if filterValue != "All" and searchTerm:
+                    query += f" WHERE {column_map[filterValue]} LIKE ?"
+                    params.append(f"%{searchTerm}%")
+
+                query += f" AND BOOKING.IsDeleted = 1"
+
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+
+                # Clear Tree View
+                for item in tree.get_children():
+                    tree.delete(item)
+
+                # Insert new filtered rows
+                for row in rows:
+                    tree.insert("", tk.END, values=row)
+
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
+        # Note: HIHI
         # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
         # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
         #                     it is moved around by canvas.
@@ -1616,7 +1830,6 @@ def open_dashboard(on_logout_callback):
                                , 'Room Number'
                                , 'Check-In'
                                , 'Check-Out'
-                               , 'Rent Time'
                                )
         filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
         filterCmb.current(0)
@@ -1631,6 +1844,7 @@ def open_dashboard(on_logout_callback):
                               , text="Search"
                               , pady=5
                               , padx=40
+                              , command= loadFilterHistory
                               )
         btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
@@ -1638,6 +1852,7 @@ def open_dashboard(on_logout_callback):
                              , text="Reset"
                              , pady=5
                              , padx=40
+                             , command= lambda: loadHistory(tree)
                              )
         btnReset.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
 
@@ -1653,20 +1868,23 @@ def open_dashboard(on_logout_callback):
         tree = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
-        tree['columns'] = ("Name"
+        tree['columns'] = ("GuestID"
+                           , "Name"
                            , "Contact"
                            , "Address"
-                           , "ID Proof"
-                           , "Room Type"
-                           , "Bed Type"
-                           , "Room Number"
+                           , "IDProof"
+                           , "RoomType"
+                           , "RoomNumber"
                            , "Check-In"
                            , "Check-Out"
-                           , "Rent Time"
-                           , "Total Price"
+                           , "TotalPrice"
                            )
 
         # Formatting Columns
+        tree.column("GuestID"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
         tree.column("Name"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
@@ -1679,19 +1897,15 @@ def open_dashboard(on_logout_callback):
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("ID Proof"
+        tree.column("IDProof"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Room Type"
+        tree.column("RoomType"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Bed Type"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Room Number"
+        tree.column("RoomNumber"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
@@ -1703,16 +1917,17 @@ def open_dashboard(on_logout_callback):
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Rent Time"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Total Price"
+        tree.column("TotalPrice"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
 
+
         # Create Headings
+        tree.heading("GuestID"
+                     , text="Guest ID"
+                     , anchor=tk.W
+                     )
         tree.heading("Name"
                      , text="Name"
                      , anchor=tk.W
@@ -1725,19 +1940,15 @@ def open_dashboard(on_logout_callback):
                      , text="Address"
                      , anchor=tk.W
                      )
-        tree.heading("ID Proof"
+        tree.heading("IDProof"
                      , text="ID Proof"
                      , anchor=tk.W
                      )
-        tree.heading("Room Type"
+        tree.heading("RoomType"
                      , text="Room Type"
                      , anchor=tk.W
                      )
-        tree.heading("Bed Type"
-                     , text="Bed Type"
-                     , anchor=tk.W
-                     )
-        tree.heading("Room Number"
+        tree.heading("RoomNumber"
                      , text="Room Number"
                      , anchor=tk.W
                      )
@@ -1749,11 +1960,7 @@ def open_dashboard(on_logout_callback):
                      , text="Check-Out"
                      , anchor=tk.W
                      )
-        tree.heading("Rent Time"
-                     , text="Rent Time"
-                     , anchor=tk.W
-                     )
-        tree.heading("Total Price"
+        tree.heading("TotalPrice"
                      , text="Total Price"
                      , anchor=tk.W
                      )
@@ -1769,9 +1976,119 @@ def open_dashboard(on_logout_callback):
         tree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
         scrollbar.pack(side="bottom", fill="x")
 
+        loadHistory(tree)
+
         return frame
 
     def modelCheckOutFrame():
+
+        def onCheckOut():
+            selectedItem = tree.focus()
+            if not selectedItem:
+                return
+
+            values = tree.item(selectedItem, 'values')
+
+            if values:
+                availableRoomSQL(values[1])
+                checkOut(values[0])
+                loadBookings(tree)
+
+
+                nameEntry.config(state="normal")
+                nameEntry.delete(0, tk.END)
+                nameEntry.config(state="readonly")
+
+                roomNoEntry.config(state="normal")
+                roomNoEntry.delete(0, tk.END)
+                roomNoEntry.config(state="readonly")
+
+                checkOutDateEntry.config(state="normal")
+                checkOutDateEntry.delete(0, tk.END)
+                checkOutDateEntry.config(state="readonly")
+
+        def checkOut(bookingID):
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                conn = sqlite3.connect(db_path)
+
+                cursor = conn.cursor()
+
+                updateRoomSQL = """
+                               UPDATE BOOKING
+                               SET IsDeleted = ?
+                               WHERE BookingID = ?
+                       """
+                cursor.execute(updateRoomSQL, (1, bookingID))
+                conn.commit()
+
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
+
+        def availableRoomSQL(roomID):
+
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                conn = sqlite3.connect(db_path)
+
+                cursor = conn.cursor()
+
+                updateRoomSQL = """
+                        UPDATE ROOM
+                        SET Status = ?
+                        WHERE RoomID = ?
+
+                """
+                cursor.execute(updateRoomSQL, ("Available", roomID))
+                conn.commit()
+
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
+
+        def itemOnSelect(e):
+            selectedItem = tree.focus()
+            if not selectedItem:
+                return
+
+            values = tree.item(selectedItem, 'values')
+
+            if values:
+                nameEntry.config(state="normal")
+                nameEntry.delete(0, tk.END)
+                nameEntry.insert(0, values[0])
+                nameEntry.config(state="readonly")
+
+                roomNoEntry.config(state="normal")
+                roomNoEntry.delete(0, tk.END)
+                roomNoEntry.insert(0, values[4])
+                roomNoEntry.config(state="readonly")
+
+                checkOutDateEntry.config(state="normal")
+                checkOutDateEntry.delete(0, tk.END)
+                checkOutDateEntry.insert(0, values[6])
+                checkOutDateEntry.config(state="readonly")
+
+
 
         # Note:
         # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
@@ -1880,19 +2197,13 @@ def open_dashboard(on_logout_callback):
                                      )
         checkOutDateEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
 
-        checkoutTimeEntry = tk.Entry(btnFrame
-                                     , width=20
-                                     , borderwidth=3
-                                     , state="readonly"
-                                     )
-        checkoutTimeEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
-
-        btnSearch = tk.Button(btnFrame
+        btnCheckOut = tk.Button(btnFrame
                               , text="Check Out"
                               , pady=5
                               , padx=40
+                              , command=onCheckOut
                               )
-        btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
+        btnCheckOut.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
         treeContainer = tk.Frame(mainFrame
                                  , width=1000
@@ -1906,20 +2217,28 @@ def open_dashboard(on_logout_callback):
         tree = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
-        tree['columns'] = ("Name"
+        tree['columns'] = ("BookingID"
+                           , "RoomID"
+                           , "Name"
                            , "Contact"
                            , "Address"
-                           , "ID Proof"
-                           , "Room Type"
-                           , "Bed Type"
-                           , "Room Number"
-                           , "Check-In"
-                           , "Check-Out"
-                           , "Rent Time"
-                           , "Total Price"
+                           , "ProofID"
+                           , "RoomType"
+                           , "RoomNumber"
+                           , "CheckIn"
+                           , "CheckOut"
+                           , "TotalPrice"
                            )
 
         # Formatting Columns
+        tree.column("BookingID"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("RoomID"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
         tree.column("Name"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
@@ -1932,40 +2251,41 @@ def open_dashboard(on_logout_callback):
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("ID Proof"
+        tree.column("ProofID"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Room Type"
+        tree.column("RoomType"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Bed Type"
+        tree.column("RoomNumber"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Room Number"
+        tree.column("CheckIn"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Check-In"
+        tree.column("CheckOut"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
-        tree.column("Check-Out"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Rent Time"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Total Price"
+        tree.column("TotalPrice"
                     , anchor=tk.W
                     , width=COLUMN_WIDTH
                     )
 
+
         # Create Headings
+        tree.heading("BookingID"
+                     , text="Booking ID"
+                     , anchor=tk.W
+                     )
+        tree.heading("RoomID"
+                     , text="Room ID"
+                     , anchor=tk.W
+                     )
         tree.heading("Name"
                      , text="Name"
                      , anchor=tk.W
@@ -1978,35 +2298,27 @@ def open_dashboard(on_logout_callback):
                      , text="Address"
                      , anchor=tk.W
                      )
-        tree.heading("ID Proof"
-                     , text="ID Proof"
+        tree.heading("ProofID"
+                     , text="Proof ID"
                      , anchor=tk.W
                      )
-        tree.heading("Room Type"
+        tree.heading("RoomType"
                      , text="Room Type"
                      , anchor=tk.W
                      )
-        tree.heading("Bed Type"
-                     , text="Bed Type"
-                     , anchor=tk.W
-                     )
-        tree.heading("Room Number"
+        tree.heading("RoomNumber"
                      , text="Room Number"
                      , anchor=tk.W
                      )
-        tree.heading("Check-In"
-                     , text="Check-In"
+        tree.heading("CheckIn"
+                     , text="Check In"
                      , anchor=tk.W
                      )
-        tree.heading("Check-Out"
-                     , text="Check-Out"
+        tree.heading("CheckOut"
+                     , text="Check Out"
                      , anchor=tk.W
                      )
-        tree.heading("Rent Time"
-                     , text="Rent Time"
-                     , anchor=tk.W
-                     )
-        tree.heading("Total Price"
+        tree.heading("TotalPrice"
                      , text="Total Price"
                      , anchor=tk.W
                      )
@@ -2022,9 +2334,103 @@ def open_dashboard(on_logout_callback):
         tree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
         scrollbar.pack(side="bottom", fill="x")
 
+        loadBookings(tree)
+
+        tree.bind("<<TreeviewSelect>>", itemOnSelect)
+
         return frame
 
     def modelRoomStatusFrame():
+
+        def filterResults(tree, filterBy, searchTerm):
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                column_map = {
+                    "Room Type": "RoomType",
+                    "Bed Type": "BedType",
+                    "Status": "Status"
+                }
+
+                selectedFilter = filterBy.get()
+                keyword = searchTerm.get().strip()
+
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+
+                filterSql = """
+                        SELECT RoomID, RoomNumber, RoomType, BedType, RoomCapacity, Status
+                        FROM ROOM
+                """
+                params = []
+
+                if selectedFilter == "All" and keyword:
+                    # Search all three fields
+                    filterSql += " WHERE RoomType LIKE ? OR BedType LIKE ? OR Status LIKE ?"
+                    likeKeyword = f"%{keyword}%"
+                    params.extend([likeKeyword, likeKeyword, likeKeyword])
+                elif selectedFilter in column_map and keyword:
+                    column = column_map[selectedFilter]
+                    filterSql += f" WHERE {column} LIKE ?"
+                    params.append(f"%{keyword}%")
+
+                cursor.execute(filterSql, params)
+                rows = cursor.fetchall()
+
+                # Clear treeview and insert results
+                for item in tree.get_children():
+                    tree.delete(item)
+
+                for idx, row in enumerate(rows):
+                    tree.insert('', 'end', iid=str(idx), values=row)
+
+                # Close
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
+
+        def loadRoomSQL(tree):
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                conn = sqlite3.connect(db_path)
+
+                cursor = conn.cursor()
+
+                loadRooms = """
+                        SELECT RoomID, RoomNumber, RoomType, BedType, RoomCapacity, Status
+                        FROM ROOM
+                """
+
+                # Execute and Fetch
+                cursor.execute(loadRooms)
+                rows = cursor.fetchall()
+
+                # Insert into Treeview
+                for row in rows:
+                    roomID = row[0]  # Assuming RoomID is the first column
+                    tree.insert("", "end", iid=str(roomID), values=row)
+
+                # Close
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
 
         # Note:
         # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
@@ -2141,9 +2547,11 @@ def open_dashboard(on_logout_callback):
         filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
         filterCmb.current(0)
 
+        searchTerm = StringVar()
         searchEntry = tk.Entry(btnFrame
                                , width=30
                                , borderwidth=3
+                               , textvariable = searchTerm
                                )
         searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
 
@@ -2151,6 +2559,7 @@ def open_dashboard(on_logout_callback):
                               , text="Search"
                               , pady=5
                               , padx=40
+                              , command=lambda: filterResults(roomTree, filterCmb, searchEntry)
                               )
         btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
@@ -2173,14 +2582,20 @@ def open_dashboard(on_logout_callback):
         roomTree = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
-        roomTree['columns'] = ("Room Number"
+        roomTree['columns'] = ("Room ID"
+                               , "Room Number"
                                , "Room Type"
                                , "Bed Type"
+                               , "Room Capacity"
                                , "Status"
                                )
 
         # Formatting Columns
         roomTree.column("Room Number"
+                        , anchor=tk.W
+                        , width=COLUMN_WIDTH
+                        )
+        roomTree.column("Room ID"
                         , anchor=tk.W
                         , width=COLUMN_WIDTH
                         )
@@ -2192,14 +2607,20 @@ def open_dashboard(on_logout_callback):
                         , anchor=tk.W
                         , width=COLUMN_WIDTH
                         )
+        roomTree.column("Room Capacity"
+                        , anchor=tk.W
+                        , width=COLUMN_WIDTH
+                        )
         roomTree.column("Status"
                         , anchor=tk.W
                         , width=COLUMN_WIDTH
                         )
 
         # Headings
+        roomTree.heading("Room ID", text="Room ID")
         roomTree.heading("Room Type", text="Room Type")
         roomTree.heading("Bed Type", text="Bed Type")
+        roomTree.heading("Room Capacity", text="Room Capacity")
         roomTree.heading("Room Number", text="Room Number")
         roomTree.heading("Status", text="Status")
 
@@ -2213,6 +2634,22 @@ def open_dashboard(on_logout_callback):
         # Pack
         roomTree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
         scrollbar.pack(side="bottom", fill="x")
+
+        # TREE VIEW METHODS ===========================================
+
+        def loadRoomData():
+            # Clear Existing Rows to avoid duplicates
+            for item in roomTree.get_children():
+                roomTree.delete(item)
+
+            # Load new data
+            loadRoomSQL(roomTree)
+
+        # TREE VIEW METHODS ===========================================
+
+        # Load the Room Data from Database
+        loadRoomData()
+
 
         return frame
 

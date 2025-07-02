@@ -160,7 +160,9 @@ def open_dashboard(on_logout_callback):
             }
 
             selectedFilter = filterBy.get()
-            keyword = searchTerm.get().strip()
+            keyword = searchTerm.get()
+
+            print(keyword)
 
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
@@ -365,36 +367,12 @@ def open_dashboard(on_logout_callback):
             btnRoomStatus.config(bg="white"
                                  , fg=DASHBOARD_BUTTON_COLOR
                                  )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
                                , fg="white"
                                )
             btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
-            btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
-                                    , fg="white"
-                                    )
-
-        def onHistoryClick():
-            AD_HISTORY_FRAME.lift()
-            btnHistory.config(bg="white"
-                              , fg=DASHBOARD_BUTTON_COLOR
-                              )
-            btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
-                                 )
-            btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
-                               )
-            btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
-                                 )
-            btnPricing.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg="white"
                                     )
@@ -407,9 +385,6 @@ def open_dashboard(on_logout_callback):
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
@@ -428,9 +403,6 @@ def open_dashboard(on_logout_callback):
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
                                , fg="white"
                                )
@@ -449,9 +421,6 @@ def open_dashboard(on_logout_callback):
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
                                , fg="white"
                                )
@@ -470,9 +439,6 @@ def open_dashboard(on_logout_callback):
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
                                  , fg="white"
                                  )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
-                              )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
                                , fg="white"
                                )
@@ -518,34 +484,6 @@ def open_dashboard(on_logout_callback):
                                   , command=onRoomStatusClick
                                   )
         btnRoomStatus.pack(anchor="n")
-
-        buttonFrame2 = tk.Frame(dashboardFrame
-                                , bg=DASHBOARD_FRAME_COLOR
-                                , height=50
-                                , width=230
-                                )
-        buttonFrame2.pack_propagate(False)
-        buttonFrame2.pack(pady=(20, 0)
-                          )
-
-        btnHistory = tk.Button(buttonFrame2
-                               , text="History"
-                               , fg="white"
-                               , bg=DASHBOARD_FRAME_COLOR
-                               , height=50
-                               , width=230
-                               , borderwidth=0
-                               , highlightthickness=0
-                               , activebackground="white"
-                               , activeforeground=DASHBOARD_BUTTON_COLOR
-                               , relief=tk.FLAT
-                               , font=tkFont.Font(family="Arial"
-                                                  , size=12
-                                                  , weight="bold"
-                                                  )
-                               , command=onHistoryClick
-                               )
-        btnHistory.pack(anchor="n")
 
         buttonFrame3 = tk.Frame(dashboardFrame
                                 , bg=DASHBOARD_FRAME_COLOR
@@ -666,7 +604,7 @@ def open_dashboard(on_logout_callback):
                                 , width=230
                                 )
         buttonFrame5.pack_propagate(False)
-        buttonFrame5.pack(pady=(120, 0)
+        buttonFrame5.pack(pady=(190, 0)
                           , anchor="n"
                           )
 
@@ -808,19 +746,18 @@ def open_dashboard(on_logout_callback):
         filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
         filterCmb.current(0)
 
-        searchTerm = StringVar()
         searchEntry = tk.Entry(btnFrame
                                , width=30
                                , borderwidth=3
-                               , textvariable=searchTerm
                                )
         searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
+
 
         btnSearch = tk.Button(btnFrame
                               , text="Search"
                               , pady=5
                               , padx=40
-                              , command=lambda: filterResults(roomTree, selectedFilter, searchTerm)
+                              , command= lambda: filterResults(roomTree, filterCmb, searchEntry)
                               )
         btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
 
@@ -903,279 +840,6 @@ def open_dashboard(on_logout_callback):
 
         # Load the Room Data from Database
         loadRoomData()
-
-        return frame
-
-    def modelHistoryFrame():
-
-        # Note:
-        # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
-        # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
-        #                     it is moved around by canvas.
-
-        # Main Whole Frame
-        frame = tk.Frame(canvas
-                         , bg="white"
-                         , height=635
-                         , width=1050
-                         )
-        # This forces the frame to keep the fixed size regardless what's inside of it.
-        frame.pack_propagate(False)
-
-        # A scrollable canvas embedded in the bookingFrame and a scrollbar
-        scroll_canvas = tk.Canvas(frame, width=1050, bg="white")
-        scrollbar = tk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
-
-        # Linking the canvas to the scrollbar so
-        # when the canvas moves the scrollbar's thumb pos will also move.
-        scroll_canvas.configure(yscrollcommand=scrollbar.set)
-
-        scrollbar.pack(side="right", fill="y")
-        # expand=True means the canvas will grow as the BookingFrame grows.
-        scroll_canvas.pack(side="left", fill="both", expand=True)
-
-        # This frame contains the actual scrollable contents
-        mainFrame = tk.Frame(scroll_canvas, bg="white")
-        # Embedding the mainBookingFrame to the scroll canvas
-        scroll_canvas.create_window((0, 0), window=mainFrame, anchor="nw")
-
-        # Events
-
-        # This allows the canvas to know that the scrollable area has a specified tall
-        # so that it can be updated or be scrolled
-        def update_scrollregion(e):
-            canvas_height = scroll_canvas.winfo_height()
-            content_bbox = scroll_canvas.bbox("all")
-
-            if content_bbox:
-                content_height = content_bbox[3] - content_bbox[1]  # bottom - top
-
-                # Only set scrollregion if content is taller than the canvas
-                if content_height > canvas_height:
-                    scroll_canvas.configure(scrollregion=content_bbox)
-                else:
-                    # Lock scrolling — set scrollregion to visible canvas only
-                    scroll_canvas.configure(scrollregion=(0, 0, 0, canvas_height))
-
-        # Whenever the frame changes size,
-        # it Recalculates the scroll region when the mainBookingFrame size changes
-        mainFrame.bind("<Configure>", update_scrollregion)
-
-        def on_mousewheel(e):
-            content_bbox = scroll_canvas.bbox("all")
-            if content_bbox:
-                content_height = content_bbox[3] - content_bbox[1]
-                canvas_height = scroll_canvas.winfo_height()
-
-                if content_height > canvas_height:
-                    scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-
-        scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
-        scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
-
-        # Main UI Elements inside
-
-        lblTitle = tk.Label(mainFrame
-                            , text="History"
-                            , fg="black"
-                            , bg="white"
-                            , font=tkFont.Font(family="Arial"
-                                               , size=21
-                                               , weight="bold"
-                                               )
-                            )
-        lblTitle.pack(pady=(20, 0)
-                      , padx=(20, 0)
-                      , anchor="w"
-                      )
-
-        btnFrame = tk.Frame(mainFrame
-                            , bg="white"
-                            )
-        btnFrame.pack(anchor="w")
-
-        lblSearchBy = tk.Label(btnFrame
-                               , text="Search By"
-                               , fg="black"
-                               , bg="white"
-                               , font=tkFont.Font(family="Arial"
-                                                  , size=12
-                                                  , weight="bold"
-                                                  )
-                               )
-        lblSearchBy.pack(pady=(24, 0)
-                         , padx=(10, 0)
-                         , anchor="w"
-                         , side="left"
-                         )
-
-        selectedFilter = StringVar()
-        filterCmb = ttk.Combobox(btnFrame
-                                 , textvariable=selectedFilter
-                                 , state="readonly"
-                                 , width=20
-                                 )
-        filterCmb['values'] = ('All'
-                               , 'Name'
-                               , 'Contact'
-                               , 'ID Proof'
-                               , 'Room Type'
-                               , 'Bed Type'
-                               , 'Room Number'
-                               , 'Check-In'
-                               , 'Check-Out'
-                               , 'Rent Time'
-                               )
-        filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
-        filterCmb.current(0)
-
-        searchEntry = tk.Entry(btnFrame
-                               , width=30
-                               , borderwidth=3
-                               )
-        searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
-
-        btnSearch = tk.Button(btnFrame
-                              , text="Search"
-                              , pady=5
-                              , padx=40
-                              )
-        btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
-
-        btnReset = tk.Button(btnFrame
-                             , text="Reset"
-                             , pady=5
-                             , padx=40
-                             )
-        btnReset.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
-
-        treeContainer = tk.Frame(mainFrame
-                                 , width=1000
-                                 , height=400
-                                 , bg="white"
-                                 )
-        treeContainer.pack(padx=10, pady=10)
-        treeContainer.pack_propagate(False)
-
-        # Treeview Widget
-        tree = ttk.Treeview(treeContainer, show="headings", height=17)
-
-        # Columns
-        tree['columns'] = ("Name"
-                           , "Contact"
-                           , "Address"
-                           , "ID Proof"
-                           , "Room Type"
-                           , "Bed Type"
-                           , "Room Number"
-                           , "Check-In"
-                           , "Check-Out"
-                           , "Rent Time"
-                           , "Total Price"
-                           )
-
-        # Formatting Columns
-        tree.column("Name"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Contact"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Address"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("ID Proof"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Room Type"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Bed Type"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Room Number"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Check-In"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Check-Out"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Rent Time"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-        tree.column("Total Price"
-                    , anchor=tk.W
-                    , width=COLUMN_WIDTH
-                    )
-
-        # Create Headings
-        tree.heading("Name"
-                     , text="Name"
-                     , anchor=tk.W
-                     )
-        tree.heading("Contact"
-                     , text="Contact"
-                     , anchor=tk.W
-                     )
-        tree.heading("Address"
-                     , text="Address"
-                     , anchor=tk.W
-                     )
-        tree.heading("ID Proof"
-                     , text="ID Proof"
-                     , anchor=tk.W
-                     )
-        tree.heading("Room Type"
-                     , text="Room Type"
-                     , anchor=tk.W
-                     )
-        tree.heading("Bed Type"
-                     , text="Bed Type"
-                     , anchor=tk.W
-                     )
-        tree.heading("Room Number"
-                     , text="Room Number"
-                     , anchor=tk.W
-                     )
-        tree.heading("Check-In"
-                     , text="Check-In"
-                     , anchor=tk.W
-                     )
-        tree.heading("Check-Out"
-                     , text="Check-Out"
-                     , anchor=tk.W
-                     )
-        tree.heading("Rent Time"
-                     , text="Rent Time"
-                     , anchor=tk.W
-                     )
-        tree.heading("Total Price"
-                     , text="Total Price"
-                     , anchor=tk.W
-                     )
-
-        # Horizontal Scrollbar
-        scrollbar = ttk.Scrollbar(treeContainer
-                                  , orient="horizontal"
-                                  , command=tree.xview
-                                  )
-        tree.configure(xscrollcommand=scrollbar.set)
-
-        # Pack
-        tree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
-        scrollbar.pack(side="bottom", fill="x")
 
         return frame
 
@@ -1550,7 +1214,7 @@ def open_dashboard(on_logout_callback):
                                 , text="Create"
                                 , width=20
                                 , pady=10
-                                , command=lambda: rts_add()
+                                , command=rts_add
                                 )
         btnCreateRT.grid(row=1, column=2, pady=(20, 0))
 
@@ -2198,6 +1862,14 @@ def open_dashboard(on_logout_callback):
                               )
         btnUpdate.grid(row=1, column=2, pady=(20, 0), padx=(20, 0))
 
+        btnRefresh = tk.Button(roomTypeInfo
+                              , text="Refresh"
+                              , width=20
+                              , pady=10
+                              , command=refresh
+                              )
+        btnRefresh.grid(row=1, column=3, pady=(20, 0), padx=(20, 0))
+
         treeContainer = tk.Frame(mainBookingFrame
                                  , width=1000
                                  , height=400
@@ -2626,7 +2298,6 @@ def open_dashboard(on_logout_callback):
     DASHBOARD_FRAME = modelDashboardFrame()
     TOP_FRAME = modelTopFrame()
     AD_ROOMSTAT_FRAME = modelRoomStatus()
-    AD_HISTORY_FRAME = modelHistoryFrame()
     AD_IDCREATE_FRAME = modelIDCreate()
     AD_ROOMCREATE_FRAME = modelRoomCreate()
     AD_PRICING_FRAME = modelPricing()
@@ -2647,12 +2318,6 @@ def open_dashboard(on_logout_callback):
     id3 = canvas.create_window(230
                                , windowHeight // 2 + 42
                                , window=AD_ROOMSTAT_FRAME
-                               , anchor="w"
-                               )
-
-    id4 = canvas.create_window(230
-                               , windowHeight // 2 + 42
-                               , window=AD_HISTORY_FRAME
                                , anchor="w"
                                )
 
