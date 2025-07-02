@@ -18,10 +18,10 @@ from Classes.auth.authenticate import Authenticator
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
-TOP_FRAME_COLOR = "#1a3f73"
-DASHBOARD_FRAME_COLOR = "#598dba"
-DASHBOARD_BUTTON_COLOR = "#4d6b88"
-LOGOUT_BUTTON_COLOR = "#407099"
+TOP_FRAME_COLOR = "#F8F9FA"
+DASHBOARD_FRAME_COLOR = "#f4f4f4"
+DASHBOARD_BUTTON_COLOR = "#C3C7CF"
+LOGOUT_BUTTON_COLOR = "#636363"
 
 # CONSTANTS
 COLUMN_WIDTH = 100
@@ -115,9 +115,9 @@ def modelAuthDashboardFrame():
                     )
     logoLabel = tk.Label(logoFrame
                           , text="HOTEL MANAGEMENT"
-                          , fg="white"
+                          , fg="#636363"
                           , bg=DASHBOARD_FRAME_COLOR
-                          , font=tkFont.Font(family="Arial"
+                          , font=tkFont.Font(family="Verdana"
                                              , size=12
                                              , weight="bold"
                                              )
@@ -135,9 +135,9 @@ def modelAuthDashboardFrame():
                      )
     usernameLabel = tk.Label(usernameFrame
                           , text="Username:"
-                          , fg="white"
+                          , fg="#636363"
                           , bg=DASHBOARD_FRAME_COLOR
-                          , font=tkFont.Font(family="Arial"
+                          , font=tkFont.Font(family="Verdana"
                                              , size=12
                                              , weight="bold"
                                              )
@@ -146,7 +146,7 @@ def modelAuthDashboardFrame():
     usernameEntry = tk.Entry(usernameFrame
                           , width=25
                           , textvariable=username
-                          , font=tkFont.Font(family="Arial"
+                          , font=tkFont.Font(family="Verdana"
                                              , size=12
                                              )
                           )
@@ -164,9 +164,9 @@ def modelAuthDashboardFrame():
                     )
     passwordLabel = tk.Label(passwordFrame
                           , text="Password:"
-                          , fg="white"
+                          , fg="#636363"
                           , bg=DASHBOARD_FRAME_COLOR
-                          , font=tkFont.Font(family="Arial"
+                          , font=tkFont.Font(family="Verdana"
                                              , size=12
                                              , weight="bold"
                                              )
@@ -175,7 +175,7 @@ def modelAuthDashboardFrame():
     passwordEntry = tk.Entry(passwordFrame
                           , width=25
                           , textvariable=password
-                          , show="*"
+                          , show="•"
                           , font=tkFont.Font(family="Arial"
                                              , size=12
                                              )
@@ -204,7 +204,7 @@ def modelAuthDashboardFrame():
                          , activebackground="white"
                          , activeforeground=DASHBOARD_BUTTON_COLOR
                          , relief=tk.FLAT
-                         , font=tkFont.Font(family="Arial"
+                         , font=tkFont.Font(family="Verdana"
                                             , size=12
                                             , weight="bold"
                                             )

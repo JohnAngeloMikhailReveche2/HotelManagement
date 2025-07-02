@@ -17,10 +17,11 @@ from Classes.admin.RoomTypeService import RoomTypeService
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
-TOP_FRAME_COLOR = "#1a3f73"
-DASHBOARD_FRAME_COLOR = "#598dba"
-DASHBOARD_BUTTON_COLOR = "#4d6b88"
-LOGOUT_BUTTON_COLOR = "#407099"
+TOP_FRAME_COLOR = "#636363"
+DASHBOARD_FRAME_COLOR = "#f4f4f4"
+DASHBOARD_BUTTON_COLOR = "#C3C7CF"
+LOGOUT_BUTTON_COLOR = "#D77A7A"
+SIDE_PANEL_TEXT_COLOR = "#8c8c8c"
 
 # CONSTANTS
 COLUMN_WIDTH = 100
@@ -71,7 +72,7 @@ def open_dashboard(on_logout_callback):
             cursor.close()
             conn.close()
         except Exception as e:
-            print("Error conttecting to database:", e)
+            print("Error connecting to database:", e)
             return None
 
     def loadRoomSQL(tree):
@@ -345,10 +346,10 @@ def open_dashboard(on_logout_callback):
         topFrame.pack_propagate(False)
 
         lblTitle = tk.Label(topFrame
-                            , text="Hotel Management"
+                            , text="HOTEL MANAGEMENT"
                             , fg="white"
                             , bg=TOP_FRAME_COLOR
-                            , font=tkFont.Font(family="Arial"
+                            , font=tkFont.Font(family="Verdana"
                                                , size=21
                                                , weight="bold"
                                                )
@@ -364,89 +365,89 @@ def open_dashboard(on_logout_callback):
 
         def onRoomStatusClick():
             AD_ROOMSTAT_FRAME.lift()
-            btnRoomStatus.config(bg="white"
-                                 , fg=DASHBOARD_BUTTON_COLOR
-                                 )
-            btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
-                               )
-            btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
+            btnRoomStatus.config(bg=SIDE_PANEL_TEXT_COLOR
                                  , fg="white"
                                  )
+            btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
+                               , fg=SIDE_PANEL_TEXT_COLOR
+                               )
+            btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
+                                 , fg=SIDE_PANEL_TEXT_COLOR
+                                 )
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
-                                    , fg="white"
+                                    , fg= SIDE_PANEL_TEXT_COLOR
                                     )
 
         def onIDCreateClick():
             AD_IDCREATE_FRAME.lift()
-            btnIDCreate.config(bg="white"
-                               , fg=DASHBOARD_BUTTON_COLOR
+            btnIDCreate.config(bg=SIDE_PANEL_TEXT_COLOR
+                               , fg="white"
                                )
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                 , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                 , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnPricing.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                              , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
-                                    , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                     )
 
         def onRoomCreateClick():
             AD_ROOMCREATE_FRAME.lift()
-            btnRoomCreate.config(bg="white"
-                                 , fg=DASHBOARD_BUTTON_COLOR
-                                 )
-            btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
+            btnRoomCreate.config(bg=SIDE_PANEL_TEXT_COLOR
                                  , fg="white"
                                  )
+            btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
+                                    , fg=SIDE_PANEL_TEXT_COLOR
+                                 )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnPricing.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
-                                    , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                     )
 
         def onPricingClick():
             AD_PRICING_FRAME.lift()
-            btnPricing.config(bg="white"
-                              , fg=DASHBOARD_BUTTON_COLOR
+            btnPricing.config(bg=SIDE_PANEL_TEXT_COLOR
+                                 , fg="white"
                               )
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
-                                    , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                     )
 
         def onRegisterStaffClick():
             AD_REGISTER_STAFF_FRAME.lift()
-            btnRegisterStaff.config(bg="white"
-                                    , fg=DASHBOARD_BUTTON_COLOR
+            btnRegisterStaff.config(bg=SIDE_PANEL_TEXT_COLOR
+                                 , fg="white"
                                     )
             btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                                  )
             btnPricing.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                                    , fg=SIDE_PANEL_TEXT_COLOR
                               )
 
         # Button Initialization
@@ -468,8 +469,8 @@ def open_dashboard(on_logout_callback):
 
         btnRoomStatus = tk.Button(buttonFrame
                                   , text="Room Status"
-                                  , fg=DASHBOARD_BUTTON_COLOR
-                                  , bg="white"
+                                  , fg="white"
+                                  , bg=SIDE_PANEL_TEXT_COLOR
                                   , height=50
                                   , width=230
                                   , borderwidth=0
@@ -477,7 +478,7 @@ def open_dashboard(on_logout_callback):
                                   , activebackground="white"
                                   , activeforeground=DASHBOARD_BUTTON_COLOR
                                   , relief=tk.FLAT
-                                  , font=tkFont.Font(family="Arial"
+                                  , font=tkFont.Font(family="Verdana"
                                                      , size=12
                                                      , weight="bold"
                                                      )
@@ -496,7 +497,7 @@ def open_dashboard(on_logout_callback):
 
         btnIDCreate = tk.Button(buttonFrame3
                                 , text="I.D Proof Creation"
-                                , fg="white"
+                                , fg=SIDE_PANEL_TEXT_COLOR
                                 , bg=DASHBOARD_FRAME_COLOR
                                 , height=50
                                 , width=230
@@ -505,7 +506,7 @@ def open_dashboard(on_logout_callback):
                                 , activebackground="white"
                                 , activeforeground=DASHBOARD_BUTTON_COLOR
                                 , relief=tk.FLAT
-                                , font=tkFont.Font(family="Arial"
+                                , font=tkFont.Font(family="Verdana"
                                                    , size=12
                                                    , weight="bold"
                                                    )
@@ -524,7 +525,7 @@ def open_dashboard(on_logout_callback):
 
         btnRoomCreate = tk.Button(buttonFrame4
                                   , text="Room Creation"
-                                  , fg="white"
+                                  , fg=SIDE_PANEL_TEXT_COLOR
                                   , bg=DASHBOARD_FRAME_COLOR
                                   , height=50
                                   , width=230
@@ -533,7 +534,7 @@ def open_dashboard(on_logout_callback):
                                   , activebackground="white"
                                   , activeforeground=DASHBOARD_BUTTON_COLOR
                                   , relief=tk.FLAT
-                                  , font=tkFont.Font(family="Arial"
+                                  , font=tkFont.Font(family="Verdana"
                                                      , size=12
                                                      , weight="bold"
                                                      )
@@ -552,7 +553,7 @@ def open_dashboard(on_logout_callback):
 
         btnPricing = tk.Button(buttonFrame7
                                , text="Check Hours"
-                               , fg="white"
+                               , fg=SIDE_PANEL_TEXT_COLOR
                                , bg=DASHBOARD_FRAME_COLOR
                                , height=50
                                , width=230
@@ -561,7 +562,7 @@ def open_dashboard(on_logout_callback):
                                , activebackground="white"
                                , activeforeground=DASHBOARD_BUTTON_COLOR
                                , relief=tk.FLAT
-                               , font=tkFont.Font(family="Arial"
+                               , font=tkFont.Font(family="Verdana"
                                                   , size=12
                                                   , weight="bold"
                                                   )
@@ -581,7 +582,7 @@ def open_dashboard(on_logout_callback):
 
         btnRegisterStaff = tk.Button(buttonFrame8
                                      , text="Register Staff"
-                                     , fg="white"
+                                     , fg=SIDE_PANEL_TEXT_COLOR
                                      , bg=DASHBOARD_FRAME_COLOR
                                      , height=50
                                      , width=230
@@ -590,7 +591,7 @@ def open_dashboard(on_logout_callback):
                                      , activebackground="white"
                                      , activeforeground=DASHBOARD_BUTTON_COLOR
                                      , relief=tk.FLAT
-                                     , font=tkFont.Font(family="Arial"
+                                     , font=tkFont.Font(family="Verdana"
                                                         , size=12
                                                         , weight="bold"
                                                         )
@@ -638,7 +639,7 @@ def open_dashboard(on_logout_callback):
 
         # Main Whole Frame
         frame = tk.Frame(canvas
-                         , bg="white"
+                         , bg="#f8f8f8"
                          , height=635
                          , width=1050
                          )

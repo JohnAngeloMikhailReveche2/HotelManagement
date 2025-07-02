@@ -30,10 +30,11 @@ from Classes.admin.RoomTypeService import RoomTypeService
 
 # Color HEX Constants
 # https://www.color-hex.com/color-palette/1061596
-TOP_FRAME_COLOR = "#1a3f73"
-DASHBOARD_FRAME_COLOR = "#598dba"
-DASHBOARD_BUTTON_COLOR = "#4d6b88"
-LOGOUT_BUTTON_COLOR = "#407099"
+TOP_FRAME_COLOR = "#636363"
+DASHBOARD_FRAME_COLOR = "#f4f4f4"
+DASHBOARD_BUTTON_COLOR = "#C3C7CF"
+LOGOUT_BUTTON_COLOR = "#D77A7A"
+SIDE_PANEL_TEXT_COLOR = "#8c8c8c"
 
 # CONSTANTS
 COLUMN_WIDTH = 100
@@ -309,92 +310,92 @@ def open_dashboard(on_logout_callback):
         # Selected Button Effect Methods
         def onBookingClick():
             BOOKING_FRAME.lift()
-            btnBooking.config(bg="white"
-                              , fg=DASHBOARD_BUTTON_COLOR
-                              )
-            btnManage.config(bg=DASHBOARD_FRAME_COLOR
-                             , fg="white"
-                             )
-            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+            btnBooking.config(bg=SIDE_PANEL_TEXT_COLOR
                               , fg="white"
                               )
+            btnManage.config(bg=DASHBOARD_FRAME_COLOR
+                             , fg=SIDE_PANEL_TEXT_COLOR
+                             )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                             , fg=SIDE_PANEL_TEXT_COLOR
+                              )
             btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
 
         def onManageClick():
             MANAGE_FRAME.lift()
-            btnManage.config(bg="white"
-                             , fg=DASHBOARD_BUTTON_COLOR
+            btnManage.config(bg=SIDE_PANEL_TEXT_COLOR
+                             , fg="white"
                              )
             btnBooking.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
 
         def onHistoryClick():
             HISTORY_FRAME.lift()
-            btnHistory.config(bg="white"
-                              , fg=DASHBOARD_BUTTON_COLOR
+            btnHistory.config(bg=SIDE_PANEL_TEXT_COLOR
+                             , fg="white"
                               )
             btnBooking.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnManage.config(bg=DASHBOARD_FRAME_COLOR
-                             , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                              )
             btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
             btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
 
         def onCheckOutClick():
             CHECK_OUT_FRAME.lift()
-            btnCheckOut.config(bg="white"
-                               , fg=DASHBOARD_BUTTON_COLOR
+            btnCheckOut.config(bg=SIDE_PANEL_TEXT_COLOR
+                             , fg="white"
                                )
             btnBooking.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnManage.config(bg=DASHBOARD_FRAME_COLOR
-                             , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                              )
             btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnRoomStat.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
 
         def onRoomStatClick():
             ROOM_STATUS_FRAME.lift()
-            btnRoomStat.config(bg="white"
-                               , fg=DASHBOARD_BUTTON_COLOR
+            btnRoomStat.config(bg=SIDE_PANEL_TEXT_COLOR
+                             , fg="white"
                                )
             btnBooking.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnManage.config(bg=DASHBOARD_FRAME_COLOR
-                             , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                              )
             btnHistory.config(bg=DASHBOARD_FRAME_COLOR
-                              , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                               )
             btnCheckOut.config(bg=DASHBOARD_FRAME_COLOR
-                               , fg="white"
+                             , fg=SIDE_PANEL_TEXT_COLOR
                                )
 
         # Button Initialization
@@ -416,8 +417,8 @@ def open_dashboard(on_logout_callback):
 
         btnBooking = tk.Button(buttonFrame
                                , text="Booking"
-                               , fg=DASHBOARD_BUTTON_COLOR
-                               , bg="white"
+                               , fg="white"
+                               , bg=SIDE_PANEL_TEXT_COLOR
                                , height=50
                                , width=230
                                , borderwidth=0
@@ -444,13 +445,13 @@ def open_dashboard(on_logout_callback):
 
         btnManage = tk.Button(buttonFrame2
                               , text="Manage"
-                              , fg="white"
+                              , fg=SIDE_PANEL_TEXT_COLOR
                               , bg=DASHBOARD_FRAME_COLOR
                               , height=50
                               , width=230
                               , borderwidth=0
                               , highlightthickness=0
-                              , activebackground="white"
+                              , activebackground=SIDE_PANEL_TEXT_COLOR
                               , activeforeground=DASHBOARD_BUTTON_COLOR
                               , relief=tk.FLAT
                               , font=tkFont.Font(family="Arial"
@@ -472,7 +473,7 @@ def open_dashboard(on_logout_callback):
 
         btnHistory = tk.Button(buttonFrame3
                                , text="History"
-                               , fg="white"
+                               , fg=SIDE_PANEL_TEXT_COLOR
                                , bg=DASHBOARD_FRAME_COLOR
                                , height=50
                                , width=230
@@ -500,7 +501,7 @@ def open_dashboard(on_logout_callback):
 
         btnCheckOut = tk.Button(buttonFrame4
                                 , text="Check Out"
-                                , fg="white"
+                                , fg=SIDE_PANEL_TEXT_COLOR
                                 , bg=DASHBOARD_FRAME_COLOR
                                 , height=50
                                 , width=230
@@ -528,7 +529,7 @@ def open_dashboard(on_logout_callback):
 
         btnRoomStat = tk.Button(buttonFrame6
                                 , text="Room Status"
-                                , fg="white"
+                                , fg=SIDE_PANEL_TEXT_COLOR
                                 , bg=DASHBOARD_FRAME_COLOR
                                 , height=50
                                 , width=230
@@ -557,7 +558,7 @@ def open_dashboard(on_logout_callback):
         loggedAsLabel = tk.Label(labelFrame
                                  , text=f"Logged In As: \n\n{user[1] + " " + user[3]}"
                                  , bg=DASHBOARD_FRAME_COLOR
-                                 , fg="white"
+                                 , fg=SIDE_PANEL_TEXT_COLOR
                                  , font=tkFont.Font(family="Arial"
                                                     , size=12
                                                     , weight="bold"
