@@ -29,6 +29,7 @@ COLUMN_WIDTH = 100
 
 
 
+# Methods ================================================================
 
 def show_auth_window():
     authRoot.deiconify()
@@ -46,11 +47,17 @@ def open_dashboard_and_exit():
 def authenticate(username, password):
     auth = Authenticator(username, password)
 
-
     success, user = auth.authenticate()
 
-    if success:
+    # If the first success is an Admin then run that and early return to avoid
+    # creating user data.
+    if success and user[7] == "Admin":
+        print("Logged in user data:", user)
+        open_admin_dashboard()
+        return
 
+    # Else, the user logging in is a staff.
+    if success:
         userData = {
             "id": user[0],
             "username": user[1]
@@ -58,17 +65,12 @@ def authenticate(username, password):
 
         with open("userData.json", "w") as f:
             json.dump(userData, f)
-
-        print("Logged in user data:", user)
-
-        if user[7] == "Admin":
-            open_admin_dashboard()
-        else:
-            open_dashboard_and_exit()
+        open_dashboard_and_exit()
+        return
 
 
 
-
+# UI Models =============================================================
 
 def centerScreen():
     # Screen Dimension

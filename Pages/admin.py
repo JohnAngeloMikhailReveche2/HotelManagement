@@ -1,15 +1,14 @@
 import tkinter
 import tkinter as tk
-from email.policy import default
 from tkinter import messagebox as mb, StringVar, messagebox
 from tkinter import ttk
 import tkinter.font as tkFont
-from tokenize import String
-
-from tkcalendar import DateEntry
 
 import sqlite3
 import os
+
+from Classes import ObserverEvent
+from Classes.ObserverEvent import Event
 
 # Classes
 from Classes.admin.IDService import IDService
@@ -28,11 +27,14 @@ COLUMN_WIDTH = 100
 
 
 
+# GLOBAL
+onEventTriggered = Event()
 
 
 
 def open_dashboard(on_logout_callback):
     root = tk.Toplevel
+
 
     # METHODS
     def centerScreen():
@@ -377,6 +379,9 @@ def open_dashboard(on_logout_callback):
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg= SIDE_PANEL_TEXT_COLOR
                                     )
+            btnPricing.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
 
         def onIDCreateClick():
             AD_IDCREATE_FRAME.lift()
@@ -632,11 +637,6 @@ def open_dashboard(on_logout_callback):
 
     def modelRoomStatus():
 
-        # Note:
-        # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
-        # mainBookingFrame - The contents placed in the canvas, holding widgets. It doesn't scroll itself
-        #                     it is moved around by canvas.
-
         # Main Whole Frame
         frame = tk.Frame(canvas
                          , bg="#f8f8f8"
@@ -841,6 +841,9 @@ def open_dashboard(on_logout_callback):
 
         # Load the Room Data from Database
         loadRoomData()
+
+        # Subscribe to the Observer Pattern Event
+        onEventTriggered.subscribe(loadRoomData)
 
         return frame
 
@@ -1381,6 +1384,7 @@ def open_dashboard(on_logout_callback):
                     return item['base_price']
             return None  # or some default value if not found
 
+        # Create Tooms
         def createRoomRecord(capacityValue):
             selectRoomNumber = rNumberEntry.get().strip()
             selectBedType = btEntry.get().strip()
@@ -1393,6 +1397,7 @@ def open_dashboard(on_logout_callback):
             clearCreateRoomFields()
             messagebox.showinfo("Success", "Room added successfully!")
             loadRoomData()
+            onEventTriggered.notify()
 
         def clearCreateRoomFields():
             rNumberEntry.delete(0, tk.END)
@@ -1480,6 +1485,7 @@ def open_dashboard(on_logout_callback):
                 loadRoomData()  # Refresh tree
                 clearCreateRoomFields()  # Clear Room Fields
                 btnCreate.config(state="normal")  # Re-enable
+                onEventTriggered.notify() # Load Rooms
 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to update room.\n{e}")
@@ -1503,6 +1509,7 @@ def open_dashboard(on_logout_callback):
             messagebox.showinfo("Deleted", f"Room deleted.")
             clearCreateRoomFields()
             btnCreate.config(state="normal")
+            onEventTriggered.notify() # Notify the Room Event
 
         # METHODS ========================================
 
