@@ -1,6 +1,6 @@
 [
     {
-        "name": "Single Room",
+        "name": "Single",
         "base_price": 100.0
     },
     {
@@ -10,9 +10,5 @@
     {
         "name": "Twin",
         "base_price": 4000.0
-    },
-    {
-        "name": "deluxe",
-        "base_price": 0.0
     }
 ]

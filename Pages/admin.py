@@ -6,6 +6,7 @@ import tkinter.font as tkFont
 
 import sqlite3
 import os
+import sys
 
 from Classes import ObserverEvent
 from Classes.ObserverEvent import Event
@@ -29,7 +30,9 @@ COLUMN_WIDTH = 100
 
 # GLOBAL
 onEventTriggered = Event()
-
+onPricingEventTriggered = Event()
+roomTree = None # To fix the loading of roomTree in subscriber
+pricingRoomTree = None # To fix the loading of tree in pricing subscriber
 
 
 def open_dashboard(on_logout_callback):
@@ -332,9 +335,19 @@ def open_dashboard(on_logout_callback):
             print("Error connecting to database:", e)
             return None
 
+
+
+    # SYSTEM
+
     def LogOut():
         root.destroy()  # close the dashboard
         on_logout_callback()  # call the callback to reopen login window
+
+    def on_dashboard_close():
+        # This will stop the mainloop and exit the program
+        root.destroy()
+        sys.exit()
+
 
     # MODELS
 
@@ -382,6 +395,9 @@ def open_dashboard(on_logout_callback):
             btnPricing.config(bg=DASHBOARD_FRAME_COLOR
                               , fg=SIDE_PANEL_TEXT_COLOR
                               )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
 
         def onIDCreateClick():
             AD_IDCREATE_FRAME.lift()
@@ -400,6 +416,9 @@ def open_dashboard(on_logout_callback):
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg=SIDE_PANEL_TEXT_COLOR
                                     )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
 
         def onRoomCreateClick():
             AD_ROOMCREATE_FRAME.lift()
@@ -418,6 +437,9 @@ def open_dashboard(on_logout_callback):
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg=SIDE_PANEL_TEXT_COLOR
                                     )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
 
         def onPricingClick():
             AD_PRICING_FRAME.lift()
@@ -436,6 +458,9 @@ def open_dashboard(on_logout_callback):
             btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg=SIDE_PANEL_TEXT_COLOR
                                     )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
 
         def onRegisterStaffClick():
             AD_REGISTER_STAFF_FRAME.lift()
@@ -454,6 +479,31 @@ def open_dashboard(on_logout_callback):
             btnPricing.config(bg=DASHBOARD_FRAME_COLOR
                                     , fg=SIDE_PANEL_TEXT_COLOR
                               )
+            btnHistory.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
+
+        def onHistoryClick():
+            AD_HISTORY_FRAME.lift()
+            btnHistory.config(bg=SIDE_PANEL_TEXT_COLOR
+                                    , fg="white"
+                                    )
+            btnRoomStatus.config(bg=DASHBOARD_FRAME_COLOR
+                                 , fg=SIDE_PANEL_TEXT_COLOR
+                                 )
+            btnIDCreate.config(bg=DASHBOARD_FRAME_COLOR
+                               , fg=SIDE_PANEL_TEXT_COLOR
+                               )
+            btnRoomCreate.config(bg=DASHBOARD_FRAME_COLOR
+                                 , fg=SIDE_PANEL_TEXT_COLOR
+                                 )
+            btnPricing.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
+            btnRegisterStaff.config(bg=DASHBOARD_FRAME_COLOR
+                              , fg=SIDE_PANEL_TEXT_COLOR
+                              )
+
 
         # Button Initialization
         dashboardFrame = tk.Frame(canvas
@@ -501,7 +551,7 @@ def open_dashboard(on_logout_callback):
                           )
 
         btnIDCreate = tk.Button(buttonFrame3
-                                , text="I.D Proof Creation"
+                                , text="I.D Config"
                                 , fg=SIDE_PANEL_TEXT_COLOR
                                 , bg=DASHBOARD_FRAME_COLOR
                                 , height=50
@@ -529,7 +579,7 @@ def open_dashboard(on_logout_callback):
                           )
 
         btnRoomCreate = tk.Button(buttonFrame4
-                                  , text="Room Creation"
+                                  , text="Room Config"
                                   , fg=SIDE_PANEL_TEXT_COLOR
                                   , bg=DASHBOARD_FRAME_COLOR
                                   , height=50
@@ -557,7 +607,7 @@ def open_dashboard(on_logout_callback):
                           )
 
         btnPricing = tk.Button(buttonFrame7
-                               , text="Check Hours"
+                               , text="Pricing Config"
                                , fg=SIDE_PANEL_TEXT_COLOR
                                , bg=DASHBOARD_FRAME_COLOR
                                , height=50
@@ -604,13 +654,42 @@ def open_dashboard(on_logout_callback):
                                      )
         btnRegisterStaff.pack(anchor="n")
 
+        historyButtonFrame = tk.Frame(dashboardFrame
+                                      , bg=DASHBOARD_FRAME_COLOR
+                                      , height=50
+                                      , width=230
+                                      )
+        historyButtonFrame.pack_propagate(False)
+        historyButtonFrame.pack(pady=(20, 0)
+                                , anchor="n"
+                                )
+
+        btnHistory = tk.Button(historyButtonFrame
+                               , text="History"
+                               , fg=SIDE_PANEL_TEXT_COLOR
+                               , bg=DASHBOARD_FRAME_COLOR
+                               , height=50
+                               , width=230
+                               , borderwidth=0
+                               , highlightthickness=0
+                               , activebackground="white"
+                               , activeforeground=DASHBOARD_BUTTON_COLOR
+                               , relief=tk.FLAT
+                               , font=tkFont.Font(family="Arial"
+                                                  , size=12
+                                                  , weight="bold"
+                                                  )
+                               , command=onHistoryClick
+                               )
+        btnHistory.pack(anchor="n")
+
         buttonFrame5 = tk.Frame(dashboardFrame
                                 , bg=DASHBOARD_FRAME_COLOR
                                 , height=50
                                 , width=230
                                 )
         buttonFrame5.pack_propagate(False)
-        buttonFrame5.pack(pady=(190, 0)
+        buttonFrame5.pack(pady=(120, 0)
                           , anchor="n"
                           )
 
@@ -632,6 +711,8 @@ def open_dashboard(on_logout_callback):
                               , command=LogOut
                               )
         btnLogOut.pack(anchor="n")
+
+
 
         return dashboardFrame
 
@@ -771,6 +852,7 @@ def open_dashboard(on_logout_callback):
         treeContainer.pack_propagate(False)
 
         # Treeview Widget
+        global roomTree
         roomTree = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
@@ -830,11 +912,9 @@ def open_dashboard(on_logout_callback):
         # TREE VIEW METHODS ===========================================
 
         def loadRoomData():
-            # Clear Existing Rows to avoid duplicates
             for item in roomTree.get_children():
                 roomTree.delete(item)
 
-            # Load new data
             loadRoomSQL(roomTree)
 
         # TREE VIEW METHODS ===========================================
@@ -1057,16 +1137,25 @@ def open_dashboard(on_logout_callback):
             if not name:
                 messagebox.showwarning("Missing", "Name is required.")
                 return
+
+            # Check if name already exists
+            existing_items = logic.read_all()
+            if any(item['name'].lower() == name.lower() for item in existing_items):
+                messagebox.showwarning("Duplicate", f"'{name}' already exists.")
+                return
+
             if selected_index[0] is not None:
                 data = logic.read_all()
                 if selected_index[0] < len(data) and data[selected_index[0]]['name'] == name:
                     messagebox.showwarning("Duplicate", "This item is already selected. Use Update instead.")
                     return
             success, msg = logic.add(name, 0)
+
             if success:
                 rts_refresh()
                 rts_clear()
                 roomTypeCmbRefresh()
+                onPricingEventTriggered.notify()
             else:
                 messagebox.showerror("Error", msg)
 
@@ -1087,6 +1176,7 @@ def open_dashboard(on_logout_callback):
                 rts_refresh()
                 rts_clear()
                 roomTypeCmbRefresh()
+                onPricingEventTriggered.notify()
             else:
                 messagebox.showerror("Error", msg)
 
@@ -1101,6 +1191,7 @@ def open_dashboard(on_logout_callback):
                 if success:
                     rts_refresh()
                     rts_clear()
+                    onPricingEventTriggered.notify()
                 else:
                     messagebox.showerror("Error", msg)
 
@@ -1340,7 +1431,7 @@ def open_dashboard(on_logout_callback):
                          )
         rStat.grid(row=1, column=5, padx=(20, 10), pady=(20, 0))
         rStatCombo = ttk.Combobox(roomInfo,
-                                  values=["Available", "Occupied", "Maintenance", "Under Construction",
+                                  values=["Available", "Maintenance", "Under Construction",
                                           "Not Available"],
                                   state="readonly",
                                   font=("Arial", 10),
@@ -1397,7 +1488,7 @@ def open_dashboard(on_logout_callback):
             clearCreateRoomFields()
             messagebox.showinfo("Success", "Room added successfully!")
             loadRoomData()
-            onEventTriggered.notify()
+            onEventTriggered.notify() # Call the load method in Room Status
 
         def clearCreateRoomFields():
             rNumberEntry.delete(0, tk.END)
@@ -1433,11 +1524,17 @@ def open_dashboard(on_logout_callback):
                 rCapacityEntry.delete(0, tk.END)
                 rCapacityEntry.insert(0, values[4])
 
-                rStatCombo.set(values[5])
+                # Safe-check if Occupied then don't display the data
+                if values[5] != "Occupied":
+                    rStatCombo.set(values[5])
 
                 btnCreate.config(state="disabled")
 
         def updateRoomRecord():
+            if treeRoom is None or not treeRoom.winfo_exists():
+                messagebox.showerror("Error", "Room list is not available.")
+                return
+
             selected = treeRoom.focus()
             if not selected:
                 messagebox.showwarning("Select Room", "Please select a room to update.")
@@ -1471,7 +1568,18 @@ def open_dashboard(on_logout_callback):
                 conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
 
-                # Update room using Room Number as primary identifier (assumed)
+
+                # Check if the current status of the room is Occupied
+                cursor.execute("SELECT Status FROM ROOM WHERE RoomID = ?", (selectRoomID,))
+                current_status = cursor.fetchone()
+
+                if current_status and current_status[0] == "Occupied":
+                    messagebox.showwarning("Room Occupied", "You cannot update a room that is currently occupied.")
+                    cursor.close()
+                    conn.close()
+                    return
+
+                # Update the room based on the RoomID that was selected
                 cursor.execute("""
                         UPDATE ROOM
                         SET RoomNumber = ?, RoomType = ?, BedType = ?, RoomCapacity = ?,  Status = ?
@@ -1479,13 +1587,19 @@ def open_dashboard(on_logout_callback):
                     """, (selectRoomNumber, selectRoomType, selectBedType, capacityValue, selectRStat, selectRoomID))
 
                 conn.commit()
+                cursor.close()
                 conn.close()
 
                 messagebox.showinfo("Success", "Room updated successfully.")
                 loadRoomData()  # Refresh tree
                 clearCreateRoomFields()  # Clear Room Fields
                 btnCreate.config(state="normal")  # Re-enable
-                onEventTriggered.notify() # Load Rooms
+                if onEventTriggered:
+                    try:
+                        onEventTriggered.notify()
+                    except Exception as notify_error:
+                        print("⚠️ Failed to notify event:", notify_error)
+                return
 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to update room.\n{e}")
@@ -1616,11 +1730,9 @@ def open_dashboard(on_logout_callback):
         # TREE VIEW METHODS ===========================================
 
         def loadRoomData():
-            # Clear Existing Rows to avoid duplicates
             for item in treeRoom.get_children():
                 treeRoom.delete(item)
 
-            # Load new data
             loadRoomSQL(treeRoom)
 
         # TREE VIEW METHODS ===========================================
@@ -1630,7 +1742,401 @@ def open_dashboard(on_logout_callback):
 
         return frame
 
+    def modelHistoryFrame():
+
+        def loadFilterHistory():
+            try:
+                # Get the absolute path of this script file
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                # Build the path to the database file
+                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+                # Normalize the path (handle ../ correctly)
+                db_path = os.path.normpath(db_path)
+
+                conn = sqlite3.connect(db_path)
+
+                cursor = conn.cursor()
+
+                filterValue = filterCmb.get()
+                searchTerm = searchEntry.get().strip()
+
+                column_map = {
+                    'Name': "GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || GUEST.LName",
+                    'Contact': 'GUEST.PhoneNumber',
+                    'ID Proof': 'GUEST.Proof_ID_Type',
+                    'Room Type': 'ROOM.RoomType',
+                    'Room Number': 'ROOM.RoomNumber',
+                    'Check-In': 'BOOKING.CheckInDT',
+                    'Check-Out': 'BOOKING.CheckOutDT'
+                }
+
+                # Base query
+                query = """
+                    SELECT
+                        BOOKING.BookingID 
+                        , GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || Guest.LName AS GuestFullName
+                        , GUEST.PhoneNumber
+                        , GUEST.Street || ', ' || COALESCE(GUEST.Barangay || ', ', '') || COALESCE(GUEST.Zip || ', ', '') || GUEST.City AS GuestFullAddress
+                        , GUEST.Proof_ID_Type
+                        , ROOM.RoomType
+                        , ROOM.RoomNumber
+                        , BOOKING.CheckInDT
+                        , BOOKING.CheckOutDT
+
+                        -- Calculate Total Price
+                        , ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
+
+
+                    FROM BOOKING
+                    INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
+                    INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
+                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+
+                    """
+
+                params = []
+
+                if filterValue != "All" and searchTerm:
+                    query += f" WHERE {column_map[filterValue]} LIKE ?"
+                    params.append(f"%{searchTerm}%")
+
+                query += f" AND BOOKING.IsDeleted = 1"
+
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+
+                # Clear Tree View
+                for item in tree.get_children():
+                    tree.delete(item)
+
+                # Insert new filtered rows
+                for row in rows:
+                    tree.insert("", tk.END, values=row)
+
+                cursor.close()
+                conn.close()
+
+            except Exception as e:
+                print("Error connecting to database:", e)
+                return None
+
+        def deleteSelectedHistory():
+            selectedItem = tree.focus()
+            if not selectedItem:
+                messagebox.showwarning("No Selection", "Please select a booking record to delete.")
+                return
+
+            confirm = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete the selected booking record?")
+            if not confirm:
+                return
+
+            try:
+                # Get the selected row values
+                selectedValue = tree.item(selectedItem, 'values')
+                bookingID = selectedValue[0]  # Assuming BookingID is the first column
+
+                # Build path to DB
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                db_path = os.path.normpath(os.path.join(script_dir, '..', 'Database', 'hotelManagement.db'))
+
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+
+                # Enable foreign key support
+                cursor.execute("PRAGMA foreign_keys = ON;")
+
+                # Get the GuestID associated with the BookingID
+                cursor.execute("SELECT GuestID FROM BOOKING WHERE BookingID = ?", (bookingID,))
+                guestRow = cursor.fetchone()
+
+                if not guestRow:
+                    messagebox.showerror("Not Found", "Booking record not found.")
+                    conn.close()
+                    return
+
+                guestID = guestRow[0]
+
+                # Delete the booking first (because it references guest)
+                cursor.execute("DELETE FROM BOOKING WHERE BookingID = ?", (bookingID,))
+
+                # Delete the guest
+                cursor.execute("DELETE FROM GUEST WHERE GuestID = ?", (guestID,))
+
+                conn.commit()
+                conn.close()
+
+                messagebox.showinfo("Deleted", "Booking and guest record permanently deleted.")
+                loadFilterHistory()  # Refresh table
+
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred while deleting the booking.\n{e}")
+
+
+
+
+
+        # Main Whole Frame
+        frame = tk.Frame(canvas
+                         , bg="white"
+                         , height=635
+                         , width=1050
+                         )
+        # This forces the frame to keep the fixed size regardless what's inside of it.
+        frame.pack_propagate(False)
+
+        # A scrollable canvas embedded in the bookingFrame and a scrollbar
+        scroll_canvas = tk.Canvas(frame, width=1050, bg="white")
+        scrollbar = tk.Scrollbar(frame, orient="vertical", command=scroll_canvas.yview)
+
+        # Linking the canvas to the scrollbar so
+        # when the canvas moves the scrollbar's thumb pos will also move.
+        scroll_canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        # expand=True means the canvas will grow as the BookingFrame grows.
+        scroll_canvas.pack(side="left", fill="both", expand=True)
+
+        # This frame contains the actual scrollable contents
+        mainFrame = tk.Frame(scroll_canvas, bg="white")
+        # Embedding the mainBookingFrame to the scroll canvas
+        scroll_canvas.create_window((0, 0), window=mainFrame, anchor="nw")
+
+        # Events
+
+        # This allows the canvas to know that the scrollable area has a specified tall
+        # so that it can be updated or be scrolled
+        def update_scrollregion(e):
+            canvas_height = scroll_canvas.winfo_height()
+            content_bbox = scroll_canvas.bbox("all")
+
+            if content_bbox:
+                content_height = content_bbox[3] - content_bbox[1]  # bottom - top
+
+                # Only set scrollregion if content is taller than the canvas
+                if content_height > canvas_height:
+                    scroll_canvas.configure(scrollregion=content_bbox)
+                else:
+                    # Lock scrolling — set scrollregion to visible canvas only
+                    scroll_canvas.configure(scrollregion=(0, 0, 0, canvas_height))
+
+        # Whenever the frame changes size,
+        # it Recalculates the scroll region when the mainBookingFrame size changes
+        mainFrame.bind("<Configure>", update_scrollregion)
+
+        def on_mousewheel(e):
+            content_bbox = scroll_canvas.bbox("all")
+            if content_bbox:
+                content_height = content_bbox[3] - content_bbox[1]
+                canvas_height = scroll_canvas.winfo_height()
+
+                if content_height > canvas_height:
+                    scroll_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+
+        scroll_canvas.bind("<Enter>", lambda e: scroll_canvas.bind_all("<MouseWheel>", on_mousewheel))
+        scroll_canvas.bind("<Leave>", lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
+
+        # Main UI Elements inside
+
+        lblTitle = tk.Label(mainFrame
+                            , text="History"
+                            , fg="black"
+                            , bg="white"
+                            , font=tkFont.Font(family="Arial"
+                                               , size=21
+                                               , weight="bold"
+                                               )
+                            )
+        lblTitle.pack(pady=(20, 0)
+                      , padx=(20, 0)
+                      , anchor="w"
+                      )
+
+        btnFrame = tk.Frame(mainFrame
+                            , bg="white"
+                            )
+        btnFrame.pack(anchor="w")
+
+        lblSearchBy = tk.Label(btnFrame
+                               , text="Search By"
+                               , fg="black"
+                               , bg="white"
+                               , font=tkFont.Font(family="Arial"
+                                                  , size=12
+                                                  , weight="bold"
+                                                  )
+                               )
+        lblSearchBy.pack(pady=(24, 0)
+                         , padx=(10, 0)
+                         , anchor="w"
+                         , side="left"
+                         )
+
+        selectedFilter = StringVar()
+        filterCmb = ttk.Combobox(btnFrame
+                                 , textvariable=selectedFilter
+                                 , state="readonly"
+                                 , width=20
+                                 )
+        filterCmb['values'] = ('All'
+                               , 'Name'
+                               , 'Contact'
+                               , 'ID Proof'
+                               , 'Room Type'
+                               , 'Bed Type'
+                               , 'Room Number'
+                               , 'Check-In'
+                               , 'Check-Out'
+                               )
+        filterCmb.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
+        filterCmb.current(0)
+
+        searchEntry = tk.Entry(btnFrame
+                               , width=30
+                               , borderwidth=3
+                               )
+        searchEntry.pack(pady=(25, 0), padx=(10, 0), side="left", anchor="w")
+
+        btnSearch = tk.Button(btnFrame
+                              , text="Search"
+                              , pady=5
+                              , padx=40
+                              , command=loadFilterHistory
+                              )
+        btnSearch.pack(pady=(20, 0), padx=(15, 0), side="left", anchor="w")
+
+        btnDelete = tk.Button(btnFrame
+                             , text="Delete"
+                             , pady=5
+                             , padx=40
+                             , command=deleteSelectedHistory
+                             )
+        btnDelete.pack(pady=(20, 0), padx=(20, 0), side="left", anchor="w")
+
+        treeContainer = tk.Frame(mainFrame
+                                 , width=1000
+                                 , height=400
+                                 , bg="white"
+                                 )
+        treeContainer.pack(padx=10, pady=10)
+        treeContainer.pack_propagate(False)
+
+        # Treeview Widget
+        tree = ttk.Treeview(treeContainer, show="headings", height=17)
+
+        # Columns
+        tree['columns'] = ("GuestID"
+                           , "Name"
+                           , "Contact"
+                           , "Address"
+                           , "IDProof"
+                           , "RoomType"
+                           , "RoomNumber"
+                           , "Check-In"
+                           , "Check-Out"
+                           , "TotalPrice"
+                           )
+
+        # Formatting Columns
+        tree.column("GuestID"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("Name"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("Contact"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("Address"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("IDProof"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("RoomType"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("RoomNumber"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("Check-In"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("Check-Out"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+        tree.column("TotalPrice"
+                    , anchor=tk.W
+                    , width=COLUMN_WIDTH
+                    )
+
+        # Create Headings
+        tree.heading("GuestID"
+                     , text="Guest ID"
+                     , anchor=tk.W
+                     )
+        tree.heading("Name"
+                     , text="Name"
+                     , anchor=tk.W
+                     )
+        tree.heading("Contact"
+                     , text="Contact"
+                     , anchor=tk.W
+                     )
+        tree.heading("Address"
+                     , text="Address"
+                     , anchor=tk.W
+                     )
+        tree.heading("IDProof"
+                     , text="ID Proof"
+                     , anchor=tk.W
+                     )
+        tree.heading("RoomType"
+                     , text="Room Type"
+                     , anchor=tk.W
+                     )
+        tree.heading("RoomNumber"
+                     , text="Room Number"
+                     , anchor=tk.W
+                     )
+        tree.heading("Check-In"
+                     , text="Check-In"
+                     , anchor=tk.W
+                     )
+        tree.heading("Check-Out"
+                     , text="Check-Out"
+                     , anchor=tk.W
+                     )
+        tree.heading("TotalPrice"
+                     , text="Total Price"
+                     , anchor=tk.W
+                     )
+
+        # Horizontal Scrollbar
+        scrollbar = ttk.Scrollbar(treeContainer
+                                  , orient="horizontal"
+                                  , command=tree.xview
+                                  )
+        tree.configure(xscrollcommand=scrollbar.set)
+
+        # Pack
+        tree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
+        scrollbar.pack(side="bottom", fill="x")
+
+        loadFilterHistory()
+
+        return frame
+
     def modelPricing():
+        global pricingRoomTree
 
         # The Json CRUD Functionality
         logic = RoomTypeService()
@@ -1668,14 +2174,14 @@ def open_dashboard(on_logout_callback):
         selected_index = [None]  # Mutable container for selected index
 
         def refresh():
-            for i in tree.get_children():
-                tree.delete(i)
+            for i in pricingRoomTree.get_children():
+                pricingRoomTree.delete(i)
 
             for idx, room in enumerate(logic.read_all()):
                 name = room["name"]
                 base_price = room["base_price"]
                 refreshRoomPricing(base_price, name)
-                tree.insert('', 'end', iid=str(idx), values=(name, base_price))
+                pricingRoomTree.insert('', 'end', iid=str(idx), values=(name, base_price))
 
         def clear():
             amountEntry.delete(0, tk.END)
@@ -1685,10 +2191,10 @@ def open_dashboard(on_logout_callback):
             selected_index[0] = None  # Reset selection on clear
 
         def on_select(e):
-            selected = tree.focus()
+            selected = pricingRoomTree.focus()
             if selected:
                 selected_index[0] = int(selected)
-                values = tree.item(selected, 'values')
+                values = pricingRoomTree.item(selected, 'values')
 
                 name = values[0]
                 amount = values[1]
@@ -1886,38 +2392,40 @@ def open_dashboard(on_logout_callback):
         treeContainer.pack(padx=(13, 0), pady=5)
         treeContainer.pack_propagate(False)
 
-        # Treeview Widget
-        tree = ttk.Treeview(treeContainer, show="headings", height=17)
+        # Treeview
+        pricingRoomTree = ttk.Treeview(treeContainer, show="headings", height=17)
 
         # Columns
-        tree['columns'] = ("RoomType"
+        pricingRoomTree['columns'] = ("RoomType"
                            , "BaseAmount"
                            )
 
         # Formatting Columns
-        tree.column("RoomType"
+        pricingRoomTree.column("RoomType"
                     , anchor=tk.W
                     , width=400
                     )
-        tree.column("BaseAmount"
+        pricingRoomTree.column("BaseAmount"
                     , anchor=tk.W
                     , width=400
                     )
 
         # Create Headings
-        tree.heading("RoomType"
+        pricingRoomTree.heading("RoomType"
                      , text="Room Type"
                      , anchor=tk.W
                      )
-        tree.heading("BaseAmount"
+        pricingRoomTree.heading("BaseAmount"
                      , text="Base Amount"
                      , anchor=tk.W
                      )
 
         # Pack
-        tree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
-        tree.bind("<<TreeviewSelect>>", on_select)
+        pricingRoomTree.pack(pady=(5, 0), padx=(10, 0), anchor="nw")
+        pricingRoomTree.bind("<<TreeviewSelect>>", on_select)
         refresh()
+
+        onPricingEventTriggered.subscribe(refresh)
 
         return frame
 
@@ -2310,6 +2818,7 @@ def open_dashboard(on_logout_callback):
     AD_ROOMCREATE_FRAME = modelRoomCreate()
     AD_PRICING_FRAME = modelPricing()
     AD_REGISTER_STAFF_FRAME = modelStaffFrame()
+    AD_HISTORY_FRAME = modelHistoryFrame()
 
     id1 = canvas.create_window(windowWidth // 2
                                , 0
@@ -2353,9 +2862,16 @@ def open_dashboard(on_logout_callback):
                                , anchor="w"
                                )
 
+    id8 = canvas.create_window(230
+                               , windowHeight // 2 + 42
+                               , window=AD_HISTORY_FRAME
+                               , anchor="w"
+                               )
+
     # Canvas Config
     AD_ROOMSTAT_FRAME.lift()
 
+    root.protocol("WM_DELETE_WINDOW", on_dashboard_close)
     # Application Loop
     root.mainloop()
 
