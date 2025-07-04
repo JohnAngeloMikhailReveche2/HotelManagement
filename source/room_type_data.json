@@ -1,14 +1,14 @@
 [
     {
-        "name": "Single",
-        "base_price": 100.0
+        "name": "Single Room",
+        "base_price": 150.0
     },
     {
-        "name": "Double",
-        "base_price": 200.0
+        "name": "Double Room",
+        "base_price": 250.0
     },
     {
-        "name": "Twin",
-        "base_price": 4000.0
+        "name": "Twin Room",
+        "base_price": 500.0
     }
 ]

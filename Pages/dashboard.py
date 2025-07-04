@@ -14,6 +14,9 @@ import sys
 
 import sqlite3
 
+from Classes import ObserverEvent
+from Classes.ObserverEvent import Event
+
 from Classes.admin.IDService import IDService
 from Classes.admin.RoomTypeService import RoomTypeService
 
@@ -49,12 +52,93 @@ roomBasePrice = 0.0
 checkInGlobal = datetime.now()
 checkOutGlobal = datetime.now()
 
-
+onEventTriggered = Event()
+roomTree = None # To fix the loading of roomTree in subscriber
+user = None
+roomIDMap = {}
 
 def open_dashboard(on_logout_callback):
-    root = tk.Toplevel
+    global roomTree, historyTree, treeBookingInManage, treeCheckOut
 
     # ======================== METHODS ===========================
+
+    def loadFilterBookings():
+        try:
+            # Get the absolute path of this script file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Build the path to the database file
+            db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
+            # Normalize the path (handle ../ correctly)
+            db_path = os.path.normpath(db_path)
+
+            conn = sqlite3.connect(db_path)
+
+            cursor = conn.cursor()
+
+            filterValue = filterCmb.get()
+            searchTerm = searchEntry.get().strip()
+
+            column_map = {
+                'Name': "GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || GUEST.LName",
+                'Contact': 'GUEST.PhoneNumber',
+                'ID Proof': 'GUEST.Proof_ID_Type',
+                'Room Type': 'ROOM.RoomType',
+                'Room Number': 'ROOM.RoomNumber',
+                'Check-In': 'BOOKING.CheckInDT',
+                'Check-Out': 'BOOKING.CheckOutDT'
+            }
+
+            # Base query
+            query = """
+                    SELECT 
+                        GUEST.GuestID,
+                        GUEST.FName,
+                        GUEST.MName,
+                        GUEST.LName,
+                        GUEST.PhoneNumber,
+                        GUEST.Gender,
+                        GUEST.Street,
+                        GUEST.Barangay,
+                        GUEST.City,
+                        GUEST.Zip,
+                        GUEST.Proof_ID_Type,
+                        GUEST.Proof_ID_Number,
+                        ROOM.RoomType,
+                        ROOM.RoomNumber,
+                        BOOKING.CheckInDT,
+                        BOOKING.CheckOutDT,
+                        ROUND((julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS Hour,
+                        ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
+                    FROM BOOKING
+                    INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
+                    INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
+                    INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
+                    WHERE BOOKING.IsDeleted = 0
+                """
+
+            params = []
+
+            if filterValue != "All" and searchTerm:
+                query += f" WHERE {column_map[filterValue]} LIKE ?"
+                params.append(f"%{searchTerm}%")
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            # Clear Tree View
+            for item in treeBookingInManage.get_children():
+                treeBookingInManage.delete(item)
+
+            # Insert new filtered rows
+            for row in rows:
+                treeBookingInManage.insert("", tk.END, values=row)
+
+            cursor.close()
+            conn.close()
+
+        except Exception as e:
+            print("Error connecting to database:", e)
+            return None
 
     # SQL
     #def QueryRoomAvailability():
@@ -81,9 +165,12 @@ def open_dashboard(on_logout_callback):
             cursor.execute(createGuest, (fName, mName, lName, gender, phoneNumber, proofID, proofIDNum, street, barangay, zip, city, 0))
             guestID = cursor.lastrowid
             conn.commit()
+            onEventTriggered.notify()
 
             cursor.close()
             conn.close()
+
+
 
         except Exception as e:
             print("Error connecting to database:", e)
@@ -111,8 +198,10 @@ def open_dashboard(on_logout_callback):
             cursor.execute(createBookingSQL, (guestID, roomIDMap[selectedRoomID], user[0], DTCheckIn, DTCheckOut, 0))
             conn.commit()
 
+
             cursor.close()
             conn.close()
+            onEventTriggered.notify()
 
         except Exception as e:
             print("Error connecting to database:", e)
@@ -144,6 +233,8 @@ def open_dashboard(on_logout_callback):
 
             cursor.close()
             conn.close()
+
+            onEventTriggered.notify()
 
         except Exception as e:
             print("Error connecting to database:", e)
@@ -198,9 +289,14 @@ def open_dashboard(on_logout_callback):
             cursor.close()
             conn.close()
 
+
         except Exception as e:
             print("Error connecting to database:", e)
             return None
+
+    def refreshRoomTree():
+        if roomTree:
+            loadBookings(roomTree)
 
     def loadHistory(tree):
         try:
@@ -254,9 +350,26 @@ def open_dashboard(on_logout_callback):
             print("Error connecting to database:", e)
             return None
 
+    def refreshHistoryTree():
+        if historyTree:
+            loadHistory(historyTree)
 
+    def refreshManageTree():
+        if treeBookingInManage:
+            loadFilterBookings()
 
+    def refreshCheckOutTree():
+        if treeCheckOut:
+            loadBookings(treeCheckOut)
 
+    # === Subscribe AFTER ALL refresh methods are defined ===
+    onEventTriggered.subscribe(refreshRoomTree)
+    onEventTriggered.subscribe(refreshHistoryTree)
+    onEventTriggered.subscribe(refreshManageTree)
+    onEventTriggered.subscribe(refreshCheckOutTree)
+
+    # === Initial Load of All Trees ===
+    refreshRoomTree()
 
     # System
 
@@ -680,6 +793,9 @@ def open_dashboard(on_logout_callback):
 
             checkInBooking()
             clearBookingFields()
+
+            onEventTriggered.notify()
+
             messagebox.showinfo("Success", "Booking is registered successfully!")
 
 
@@ -1109,6 +1225,7 @@ def open_dashboard(on_logout_callback):
                                  )
         roomNoEntry.grid(row=0, column=6)
 
+
         # ======================= CHECK IN AND OUT ===============================
 
         checkGroupBox = tk.LabelFrame(mainBookingFrame
@@ -1233,85 +1350,8 @@ def open_dashboard(on_logout_callback):
         return bookingFrame
 
     def modelManageFrame():
+        global treeBookingInManage, filterCmb, searchEntry
 
-        def loadFilterBookings():
-            try:
-                # Get the absolute path of this script file
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                # Build the path to the database file
-                db_path = os.path.join(script_dir, '..', 'Database', 'hotelManagement.db')
-                # Normalize the path (handle ../ correctly)
-                db_path = os.path.normpath(db_path)
-
-                conn = sqlite3.connect(db_path)
-
-                cursor = conn.cursor()
-
-                filterValue = filterCmb.get()
-                searchTerm = searchEntry.get().strip()
-
-                column_map = {
-                    'Name': "GUEST.FName || ' ' || COALESCE(GUEST.MName || ' ', '') || GUEST.LName",
-                    'Contact': 'GUEST.PhoneNumber',
-                    'ID Proof': 'GUEST.Proof_ID_Type',
-                    'Room Type': 'ROOM.RoomType',
-                    'Room Number': 'ROOM.RoomNumber',
-                    'Check-In': 'BOOKING.CheckInDT',
-                    'Check-Out': 'BOOKING.CheckOutDT'
-                }
-
-                # Base query
-                query = """
-                        SELECT 
-                            GUEST.GuestID,
-                            GUEST.FName,
-                            GUEST.MName,
-                            GUEST.LName,
-                            GUEST.PhoneNumber,
-                            GUEST.Gender,
-                            GUEST.Street,
-                            GUEST.Barangay,
-                            GUEST.City,
-                            GUEST.Zip,
-                            GUEST.Proof_ID_Type,
-                            GUEST.Proof_ID_Number,
-                            ROOM.RoomType,
-                            ROOM.RoomNumber,
-                            BOOKING.CheckInDT,
-                            BOOKING.CheckOutDT,
-                            ROUND((julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS Hour,
-                            ROUND(ROOM.Base_Price * (julianday(BOOKING.CheckOutDT) - julianday(BOOKING.CheckInDT)) * 24, 2) AS TotalPrice
-                        FROM BOOKING
-                        INNER JOIN GUEST ON BOOKING.GuestID = GUEST.GuestID
-                        INNER JOIN STAFF ON BOOKING.StaffID = STAFF.StaffID
-                        INNER JOIN ROOM ON BOOKING.RoomID = ROOM.RoomID
-                        WHERE BOOKING.IsDeleted = 0
-                    """
-
-
-                params = []
-
-                if filterValue != "All" and searchTerm:
-                    query += f" WHERE {column_map[filterValue]} LIKE ?"
-                    params.append(f"%{searchTerm}%")
-
-                cursor.execute(query, params)
-                rows = cursor.fetchall()
-
-                # Clear Tree View
-                for item in treeBookingInManage.get_children():
-                    treeBookingInManage.delete(item)
-
-                # Insert new filtered rows
-                for row in rows:
-                    treeBookingInManage.insert("", tk.END, values=row)
-
-                cursor.close()
-                conn.close()
-
-            except Exception as e:
-                print("Error connecting to database:", e)
-                return None
 
         # Note:
         # Scroll_Canvas - is the scrollable area, the actual Canvas widget that can scroll.
@@ -1634,10 +1674,13 @@ def open_dashboard(on_logout_callback):
         treeBookingInManage.bind("<Double-1>", openDetailWindow)
 
         loadFilterBookings()
+        treeBookingInManage = treeBookingInManage  # or assign your actual tree here
 
+        refreshManageTree()  # ✅ Now it is safe to call this
         return frame
 
     def modelHistoryFrame():
+        global historyTree
 
         def loadFilterHistory():
             try:
@@ -1978,10 +2021,13 @@ def open_dashboard(on_logout_callback):
         scrollbar.pack(side="bottom", fill="x")
 
         loadHistory(tree)
+        historyTree = tree  # ✅ This gives refreshHistoryTree() access to the tree
+        refreshHistoryTree()
 
         return frame
 
     def modelCheckOutFrame():
+        global treeCheckOut
 
         def onCheckOut():
             selectedItem = tree.focus()
@@ -1994,6 +2040,8 @@ def open_dashboard(on_logout_callback):
                 availableRoomSQL(values[1])
                 checkOut(values[0])
                 loadBookings(tree)
+
+                onEventTriggered.notify()
 
 
                 nameEntry.config(state="normal")
@@ -2335,7 +2383,10 @@ def open_dashboard(on_logout_callback):
         tree.pack(pady=(10, 0), padx=(10, 0), anchor="nw")
         scrollbar.pack(side="bottom", fill="x")
 
+        treeCheckOut = tree
+
         loadBookings(tree)
+        refreshCheckOutTree()
 
         tree.bind("<<TreeviewSelect>>", itemOnSelect)
 
